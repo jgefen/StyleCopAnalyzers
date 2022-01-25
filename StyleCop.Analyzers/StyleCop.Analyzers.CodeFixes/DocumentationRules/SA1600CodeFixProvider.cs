@@ -136,7 +136,8 @@ namespace StyleCop.Analyzers.DocumentationRules
                 foreach (var parameter in declaration.ParameterList.Parameters)
                 {
                     yield return XmlSyntaxFactory.NewLine(newLineText);
-                    yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText);
+                    var paramDocumentation = XmlSyntaxFactory.Text(CommentHelper.CreateParameterComment(parameter));
+                    yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
                 }
             }
         }

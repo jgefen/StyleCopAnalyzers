@@ -137,5 +137,10 @@
         {
             return $"The {string.Join(" ", SplitNameAndToLower(name, true))}.";
         }
+
+        private static SyntaxTriviaList CreateCommentExterior()
+        {
+            return SyntaxFactory.TriviaList(SyntaxFactory.DocumentationCommentExterior("///"));
+        }
     }
 }
