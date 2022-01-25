@@ -115,14 +115,8 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText, standardTextSyntaxList));
 
-            if (declaration.ParameterList != null)
-            {
-                foreach (var parameter in declaration.ParameterList.Parameters)
-                {
-                    documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-                    documentationNodes.Add(XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText));
-                }
-            }
+            var paramtersDocumentation = GetParametersDocumentation(declaration, newLineText);
+            documentationNodes.AddRange(paramtersDocumentation);
 
             var documentationComment =
                 XmlSyntaxFactory.DocumentationComment(
@@ -133,6 +127,18 @@ namespace StyleCop.Analyzers.DocumentationRules
             SyntaxTriviaList newLeadingTrivia = leadingTrivia.Insert(insertionIndex, trivia);
             SyntaxNode newElement = declaration.WithLeadingTrivia(newLeadingTrivia);
             return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(declaration, newElement)));
+        }
+
+        private static IEnumerable<XmlNodeSyntax> GetParametersDocumentation(BaseMethodDeclarationSyntax declaration, string newLineText)
+        {
+            if (declaration.ParameterList != null)
+            {
+                foreach (var parameter in declaration.ParameterList.Parameters)
+                {
+                    yield return XmlSyntaxFactory.NewLine(newLineText);
+                    yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText);
+                }
+            }
         }
 
         private static Task<Document> GetMethodDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration, CancellationToken cancellationToken)
@@ -159,15 +165,8 @@ namespace StyleCop.Analyzers.DocumentationRules
                 }
             }
 
-            if (methodDeclaration.ParameterList != null)
-            {
-                foreach (var parameter in methodDeclaration.ParameterList.Parameters)
-                {
-                    documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-                    var typeParamDocumentation = XmlSyntaxFactory.Text(CommentHelper.CreateParameterComment(parameter));
-                    documentationNodes.Add(XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, typeParamDocumentation));
-                }
-            }
+            var paramtersDocumentation = GetParametersDocumentation(methodDeclaration, newLineText);
+            documentationNodes.AddRange(paramtersDocumentation);
 
             TypeSyntax typeName;
 
