@@ -6,6 +6,7 @@ namespace StyleCop.Analyzers.DocumentationRules
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Composition;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
@@ -136,6 +137,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
         private static Task<Document> GetMethodDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration, CancellationToken cancellationToken)
         {
+            Debugger.Launch();
             SyntaxTriviaList leadingTrivia = methodDeclaration.GetLeadingTrivia();
             int insertionIndex = GetInsertionIndex(ref leadingTrivia);
 
@@ -143,7 +145,8 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             var documentationNodes = new List<XmlNodeSyntax>();
 
-            documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText));
+            var methodNameDocumentation = XmlSyntaxFactory.Text(CommentHelper.CreateMethodComment(methodDeclaration.Identifier.ValueText));
+            documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText, methodNameDocumentation));
 
             if (methodDeclaration.TypeParameterList != null)
             {
@@ -161,36 +164,40 @@ namespace StyleCop.Analyzers.DocumentationRules
                 foreach (var parameter in methodDeclaration.ParameterList.Parameters)
                 {
                     documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-                    documentationNodes.Add(XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText));
-
-                    // TODO: Add default value
+                    var typeParamDocumentation = XmlSyntaxFactory.Text(CommentHelper.CreateParameterComment(parameter));
+                    documentationNodes.Add(XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, typeParamDocumentation));
                 }
             }
 
             TypeSyntax typeName;
 
             // TODO: check if task, handle non task cases
-            // TaskHelper.IsTaskReturningMethod(semanticModel, methodDeclaration, context.CancellationToken)
-            var typeSymbol = semanticModel.GetSymbolInfo(methodDeclaration.ReturnType, cancellationToken).Symbol as INamedTypeSymbol;
-            if (typeSymbol.IsGenericType)
+            if (TaskHelper.IsTaskReturningMethod(semanticModel, methodDeclaration, cancellationToken))
             {
-                typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task<TResult>");
-            }
-            else
-            {
-                typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task");
-            }
+                var typeSymbol =
+                    semanticModel.GetSymbolInfo(methodDeclaration.ReturnType, cancellationToken).Symbol as
+                        INamedTypeSymbol;
+                if (typeSymbol.IsGenericType)
+                {
+                    typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task<TResult>");
+                }
+                else
+                {
+                    typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task");
+                }
 
-            // TODO: handle task return documentation
-            XmlNodeSyntax[] returnContent =
-            {
-                XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementFirstPart),
-                XmlSyntaxFactory.SeeElement(SyntaxFactory.TypeCref(typeName)).WithAdditionalAnnotations(Simplifier.Annotation),
-                XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementSecondPart),
-            };
+                // TODO: handle task return documentation
+                XmlNodeSyntax[] returnContent =
+                {
+                    XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementFirstPart),
+                    XmlSyntaxFactory.SeeElement(SyntaxFactory.TypeCref(typeName))
+                        .WithAdditionalAnnotations(Simplifier.Annotation),
+                    XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementSecondPart),
+                };
 
-            documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-            documentationNodes.Add(XmlSyntaxFactory.ReturnsElement(returnContent));
+                documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
+                documentationNodes.Add(XmlSyntaxFactory.ReturnsElement(returnContent));
+            }
 
             var documentationComment =
                 XmlSyntaxFactory.DocumentationComment(
