@@ -10,7 +10,7 @@ namespace StyleCop.Analyzers.OrderingRules
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
     using StyleCop.Analyzers.Helpers;
-    using static ModifierOrderHelper;
+    using static Helpers.ModifierOrderHelper;
 
     /// <summary>
     /// The keywords within the declaration of an element do not follow a standard ordering scheme.

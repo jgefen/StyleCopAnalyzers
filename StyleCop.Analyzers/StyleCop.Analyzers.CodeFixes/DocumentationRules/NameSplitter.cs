@@ -1,11 +1,14 @@
-﻿namespace StyleCop.Analyzers.DocumentationRules
+﻿// Copyright (c) Tunnel Vision Laboratories, LLC. All Rights Reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+namespace StyleCop.Analyzers.DocumentationRules
 {
     using System.Collections.Generic;
 
     /// <summary>
     /// The name splitter.
     /// </summary>
-    public class NameSplitter
+    internal class NameSplitter
     {
         /// <summary>
         /// Splits name by upper character.

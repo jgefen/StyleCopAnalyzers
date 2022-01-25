@@ -6,7 +6,7 @@ namespace StyleCop.Analyzers.DocumentationRules
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Composition;
-    using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
@@ -59,7 +59,12 @@ namespace StyleCop.Analyzers.DocumentationRules
                     context.RegisterCodeFix(
                         CodeAction.Create(
                             DocumentationResources.ConstructorDocumentationCodeFix,
-                            cancellationToken => GetConstructorOrDestructorDocumentationTransformedDocumentAsync(context.Document, root, (BaseMethodDeclarationSyntax)identifierToken.Parent, cancellationToken),
+                            cancellationToken =>
+                                GetConstructorOrDestructorDocumentationTransformedDocumentAsync(
+                                    context.Document,
+                                    root,
+                                    (BaseMethodDeclarationSyntax)identifierToken.Parent,
+                                    cancellationToken),
                             nameof(SA1600CodeFixProvider)),
                         diagnostic);
                     break;
@@ -71,14 +76,144 @@ namespace StyleCop.Analyzers.DocumentationRules
                         context.RegisterCodeFix(
                             CodeAction.Create(
                                 DocumentationResources.MethodDocumentationCodeFix,
-                                cancellationToken => GetMethodDocumentationTransformedDocumentAsync(context.Document, root, semanticModel, (MethodDeclarationSyntax)identifierToken.Parent, cancellationToken),
+                                cancellationToken => GetMethodDocumentationTransformedDocumentAsync(
+                                    context.Document,
+                                    root,
+                                    semanticModel,
+                                    (MethodDeclarationSyntax)identifierToken.Parent,
+                                    cancellationToken),
                                 nameof(SA1600CodeFixProvider)),
                             diagnostic);
                     }
 
                     break;
+
+                case SyntaxKind.DelegateDeclaration:
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            DocumentationResources.MethodDocumentationCodeFix,
+                            cancellationToken => GetDelegateDocumentationTransformedDocumentAsync(
+                                context.Document,
+                                root,
+                                semanticModel,
+                                (DelegateDeclarationSyntax)identifierToken.Parent,
+                                cancellationToken),
+                            nameof(SA1600CodeFixProvider)),
+                        diagnostic);
+
+                    break;
+
+                case SyntaxKind.PropertyDeclaration:
+                    var propertyDeclaration = (PropertyDeclarationSyntax)identifierToken.Parent;
+                    if (!IsCoveredByInheritDoc(semanticModel, propertyDeclaration, context.CancellationToken))
+                    {
+                        context.RegisterCodeFix(
+                            CodeAction.Create(
+                                DocumentationResources.MethodDocumentationCodeFix,
+                                cancellationToken => GetPropertyDocumentationTransformedDocumentAsync(
+                                    context.Document,
+                                    root,
+                                    semanticModel,
+                                    (PropertyDeclarationSyntax)identifierToken.Parent,
+                                    cancellationToken),
+                                nameof(SA1600CodeFixProvider)),
+                            diagnostic);
+                    }
+
+                    break;
+
+                case SyntaxKind.ClassDeclaration:
+                case SyntaxKind.StructDeclaration:
+                case SyntaxKind.InterfaceDeclaration:
+                case SyntaxKind.EnumDeclaration:
+                    // TODO: should check inheritance?
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            DocumentationResources.MethodDocumentationCodeFix,
+                            _ => GetCommonTypeDocumentationTransformedDocumentAsync(
+                                context.Document,
+                                root,
+                                identifierToken.Parent,
+                                ((BaseTypeDeclarationSyntax)identifierToken.Parent).Identifier),
+                            nameof(SA1600CodeFixProvider)),
+                        diagnostic);
+
+                    break;
+
+                case SyntaxKind.VariableDeclarator:
+                    var fieldDeclaration = identifierToken.Parent.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault();
+                    if (fieldDeclaration == null)
+                    {
+                        break;
+                    }
+
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            DocumentationResources.MethodDocumentationCodeFix,
+                            _ => GetCommonTypeDocumentationTransformedDocumentAsync(
+                                context.Document,
+                                root,
+                                identifierToken.Parent.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault(),
+                                identifierToken.Parent.AncestorsAndSelf().OfType<VariableDeclaratorSyntax>().First().Identifier),
+                            nameof(SA1600CodeFixProvider)),
+                        diagnostic);
+
+                    break;
+
+                    // TODO: should add the following cases:
+                    // SyntaxKind.IndexerDeclaration
+                    // SyntaxKind.EventDeclaration
+                    // SyntaxKind.EventDeclaration
+                    // SyntaxKind.EventFieldDeclaration
                 }
             }
+        }
+
+        private static Task<Document> GetCommonTypeDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            SyntaxNode declaration,
+            SyntaxToken declarationIdentifier)
+        {
+            string newLineText = GetNewLineText(document);
+
+            var documentationText = CommonDocumentationHelper.CreateCommonComment(declarationIdentifier.ValueText, declaration.Kind() == SyntaxKind.InterfaceDeclaration);
+            var documentationNode = CreateSummeryNode(documentationText, newLineText);
+
+            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNode));
+        }
+
+        private static Task<Document> GetPropertyDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            SemanticModel semanticModel,
+            PropertyDeclarationSyntax propertyDeclaration,
+            CancellationToken cancellationToken)
+        {
+            string newLineText = GetNewLineText(document);
+
+            var propertyDocumentationText = PropertyDocumentationHelper.CreatePropertyComment(propertyDeclaration, semanticModel, cancellationToken);
+            var propertyDocumentationNode = CreateSummeryNode(propertyDocumentationText, newLineText);
+
+            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, propertyDeclaration, newLineText, propertyDocumentationNode));
+        }
+
+        private static Document CreateCommentAndReplaceInDocument(
+            Document document,
+            SyntaxNode root,
+            SyntaxNode declarationNode,
+            string newLineText,
+            params XmlNodeSyntax[] documentationNodes)
+        {
+            var leadingTrivia = declarationNode.GetLeadingTrivia();
+            int insertionIndex = GetInsertionIndex(ref leadingTrivia);
+
+            var documentationComment = XmlSyntaxFactory.DocumentationComment(newLineText, documentationNodes);
+            var trivia = SyntaxFactory.Trivia(documentationComment);
+
+            SyntaxTriviaList newLeadingTrivia = leadingTrivia.Insert(insertionIndex, trivia);
+            SyntaxNode newElement = declarationNode.WithLeadingTrivia(newLeadingTrivia);
+            return document.WithSyntaxRoot(root.ReplaceNode(declarationNode, newElement));
         }
 
         private static bool IsCoveredByInheritDoc(SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration, CancellationToken cancellationToken)
@@ -97,12 +232,28 @@ namespace StyleCop.Analyzers.DocumentationRules
             return (declaredSymbol != null) && NamedTypeHelpers.IsImplementingAnInterfaceMember(declaredSymbol);
         }
 
+        private static bool IsCoveredByInheritDoc(SemanticModel semanticModel, PropertyDeclarationSyntax propertyDeclaration, CancellationToken cancellationToken)
+        {
+            if (propertyDeclaration.ExplicitInterfaceSpecifier != null)
+            {
+                return true;
+            }
+
+            if (propertyDeclaration.Modifiers.Any(SyntaxKind.OverrideKeyword))
+            {
+                return true;
+            }
+
+            ISymbol declaredSymbol = semanticModel.GetDeclaredSymbol(propertyDeclaration, cancellationToken);
+            return (declaredSymbol != null) && NamedTypeHelpers.IsImplementingAnInterfaceMember(declaredSymbol);
+        }
+
         private static Task<Document> GetConstructorOrDestructorDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, BaseMethodDeclarationSyntax declaration, CancellationToken cancellationToken)
         {
             SyntaxTriviaList leadingTrivia = declaration.GetLeadingTrivia();
             int insertionIndex = GetInsertionIndex(ref leadingTrivia);
 
-            string newLineText = document.Project.Solution.Workspace.Options.GetOption(FormattingOptions.NewLine, LanguageNames.CSharp);
+            string newLineText = GetNewLineText(document);
 
             var documentationNodes = new List<XmlNodeSyntax>();
 
@@ -115,8 +266,8 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText, standardTextSyntaxList));
 
-            var paramtersDocumentation = GetParametersDocumentation(declaration, newLineText);
-            documentationNodes.AddRange(paramtersDocumentation);
+            var parametersDocumentation = GetParametersDocumentation(declaration.ParameterList, newLineText);
+            documentationNodes.AddRange(parametersDocumentation);
 
             var documentationComment =
                 XmlSyntaxFactory.DocumentationComment(
@@ -129,34 +280,89 @@ namespace StyleCop.Analyzers.DocumentationRules
             return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(declaration, newElement)));
         }
 
-        private static Task<Document> GetMethodDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration, CancellationToken cancellationToken)
+        private static Task<Document> GetMethodDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            SemanticModel semanticModel,
+            MethodDeclarationSyntax methodDeclaration,
+            CancellationToken cancellationToken)
         {
-            SyntaxTriviaList leadingTrivia = methodDeclaration.GetLeadingTrivia();
-            int insertionIndex = GetInsertionIndex(ref leadingTrivia);
+            return GetDelegateDocumentationTransformedDocumentAsync(
+                document,
+                root,
+                semanticModel,
+                methodDeclaration,
+                methodDeclaration.Identifier,
+                methodDeclaration.TypeParameterList,
+                methodDeclaration.ParameterList,
+                methodDeclaration.ReturnType,
+                cancellationToken);
+        }
 
-            string newLineText = document.Project.Solution.Workspace.Options.GetOption(FormattingOptions.NewLine, LanguageNames.CSharp);
+        private static Task<Document> GetDelegateDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            SemanticModel semanticModel,
+            DelegateDeclarationSyntax delegateDeclaration,
+            CancellationToken cancellationToken)
+        {
+            return GetDelegateDocumentationTransformedDocumentAsync(
+                document,
+                root,
+                semanticModel,
+                delegateDeclaration,
+                delegateDeclaration.Identifier,
+                delegateDeclaration.TypeParameterList,
+                delegateDeclaration.ParameterList,
+                delegateDeclaration.ReturnType,
+                cancellationToken);
+        }
+
+        private static Task<Document> GetDelegateDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            SemanticModel semanticModel,
+            SyntaxNode declaration,
+            SyntaxToken identifier,
+            TypeParameterListSyntax typeParameterList,
+            ParameterListSyntax parameterList,
+            TypeSyntax returnType,
+            CancellationToken cancellationToken)
+        {
+            string newLineText = GetNewLineText(document);
 
             var documentationNodes = new List<XmlNodeSyntax>();
 
-            var methodNameDocumentation = XmlSyntaxFactory.Text(CommentContentHelper.CreateMethodSummeryText(methodDeclaration.Identifier.ValueText));
-            documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText, methodNameDocumentation));
+            var summeryContent = MethodDocumentationHelper.CreateMethodSummeryText(identifier.ValueText);
+            documentationNodes.Add(CreateSummeryNode(summeryContent, newLineText));
 
-            if (methodDeclaration.TypeParameterList != null)
+            documentationNodes.AddRange(GetTypeParametersDocumentation(typeParameterList, newLineText));
+
+            documentationNodes.AddRange(GetParametersDocumentation(parameterList, newLineText));
+
+            documentationNodes.AddRange(GetReturnDocumentation(semanticModel, returnType, cancellationToken, newLineText));
+
+            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNodes.ToArray()));
+        }
+
+        private static XmlNodeSyntax CreateSummeryNode(string summeryContent, string newLineText)
+        {
+            var summerySyntax = XmlSyntaxFactory.Text(summeryContent);
+            return XmlSyntaxFactory.SummaryElement(newLineText, summerySyntax);
+        }
+
+        private static IEnumerable<XmlNodeSyntax> GetReturnDocumentation(
+            SemanticModel semanticModel,
+            TypeSyntax returnType,
+            CancellationToken cancellationToken,
+            string newLineText)
+        {
+            if (semanticModel.GetSymbolInfo(returnType, cancellationToken).Symbol is not INamedTypeSymbol typeSymbol)
             {
-                foreach (var typeParameter in methodDeclaration.TypeParameterList.Parameters)
-                {
-                    documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-                    var paramDocumentation = XmlSyntaxFactory.Text(CommentContentHelper.CreateTypeParameterComment(typeParameter));
-                    documentationNodes.Add(XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText, paramDocumentation));
-                }
+                yield break;
             }
 
-            var parametersDocumentation = GetParametersDocumentation(methodDeclaration, newLineText);
-            documentationNodes.AddRange(parametersDocumentation);
-
-            // TODO: check if task, handle non task cases
-            var typeSymbol = semanticModel.GetSymbolInfo(methodDeclaration.ReturnType, cancellationToken).Symbol as INamedTypeSymbol;
-            if (TaskHelper.IsTaskReturningMethod(semanticModel, methodDeclaration, cancellationToken))
+            if (TaskHelper.IsTaskReturningType(semanticModel, returnType, cancellationToken))
             {
                 TypeSyntax typeName;
 
@@ -169,33 +375,39 @@ namespace StyleCop.Analyzers.DocumentationRules
                     typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task");
                 }
 
-                // TODO: handle task return documentation
                 XmlNodeSyntax[] returnContent =
                 {
                     XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementFirstPart),
-                    XmlSyntaxFactory.SeeElement(SyntaxFactory.TypeCref(typeName))
-                        .WithAdditionalAnnotations(Simplifier.Annotation),
+                    XmlSyntaxFactory.SeeElement(SyntaxFactory.TypeCref(typeName)).WithAdditionalAnnotations(Simplifier.Annotation),
                     XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementSecondPart),
                 };
 
-                documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-                documentationNodes.Add(XmlSyntaxFactory.ReturnsElement(returnContent));
+                yield return XmlSyntaxFactory.NewLine(newLineText);
+                yield return XmlSyntaxFactory.ReturnsElement(returnContent);
             }
             else if (typeSymbol.SpecialType != SpecialType.System_Void)
             {
-                documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-                documentationNodes.Add(CommentContentHelper.CreateReturnElementSyntax(methodDeclaration.ReturnType));
+                yield return XmlSyntaxFactory.NewLine(newLineText);
+                var returnDocumentationContent = MethodDocumentationHelper.CreateReturnElementSyntax(returnType);
+                yield return XmlSyntaxFactory.ReturnsElement(returnDocumentationContent);
+            }
+        }
+
+        private static IEnumerable<XmlNodeSyntax> GetTypeParametersDocumentation(
+            TypeParameterListSyntax typeParametersList,
+            string newLineText)
+        {
+            if (typeParametersList == null)
+            {
+                yield break;
             }
 
-            var documentationComment =
-                XmlSyntaxFactory.DocumentationComment(
-                    newLineText,
-                    documentationNodes.ToArray());
-            var trivia = SyntaxFactory.Trivia(documentationComment);
-
-            SyntaxTriviaList newLeadingTrivia = leadingTrivia.Insert(insertionIndex, trivia);
-            SyntaxNode newElement = methodDeclaration.WithLeadingTrivia(newLeadingTrivia);
-            return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(methodDeclaration, newElement)));
+            foreach (var typeParameter in typeParametersList.Parameters)
+            {
+                yield return XmlSyntaxFactory.NewLine(newLineText);
+                var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateTypeParameterComment(typeParameter));
+                yield return XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText, paramDocumentation);
+            }
         }
 
         private static int GetInsertionIndex(ref SyntaxTriviaList leadingTrivia)
@@ -209,17 +421,22 @@ namespace StyleCop.Analyzers.DocumentationRules
             return insertionIndex;
         }
 
-        private static IEnumerable<XmlNodeSyntax> GetParametersDocumentation(BaseMethodDeclarationSyntax declaration, string newLineText)
+        private static IEnumerable<XmlNodeSyntax> GetParametersDocumentation(ParameterListSyntax parametersList, string newLineText)
         {
-            if (declaration.ParameterList != null)
+            if (parametersList != null)
             {
-                foreach (var parameter in declaration.ParameterList.Parameters)
+                foreach (var parameter in parametersList.Parameters)
                 {
                     yield return XmlSyntaxFactory.NewLine(newLineText);
-                    var paramDocumentation = XmlSyntaxFactory.Text(CommentContentHelper.CreateParameterSummeryText(parameter));
+                    var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateParameterSummeryText(parameter));
                     yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
                 }
             }
+        }
+
+        private static string GetNewLineText(Document document)
+        {
+            return document.Project.Solution.Workspace.Options.GetOption(FormattingOptions.NewLine, LanguageNames.CSharp);
         }
     }
 }
