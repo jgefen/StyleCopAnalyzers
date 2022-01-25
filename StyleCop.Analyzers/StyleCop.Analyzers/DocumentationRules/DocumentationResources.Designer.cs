@@ -20,7 +20,7 @@ namespace StyleCop.Analyzers.DocumentationRules {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class DocumentationResources {
@@ -71,6 +71,15 @@ namespace StyleCop.Analyzers.DocumentationRules {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Generate delegate documentation.
+        /// </summary>
+        internal static string DelegateDocumentationCodeFix {
+            get {
+                return ResourceManager.GetString("DelegateDocumentationCodeFix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Generate destructor documentation.
         /// </summary>
         internal static string DestructorDocumentationCodeFix {
@@ -94,6 +103,15 @@ namespace StyleCop.Analyzers.DocumentationRules {
         internal static string DestructorStandardTextSecondPart {
             get {
                 return ResourceManager.GetString("DestructorStandardTextSecondPart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Generate indexer documentation.
+        /// </summary>
+        internal static string IndexerDocumentationCodeFix {
+            get {
+                return ResourceManager.GetString("IndexerDocumentationCodeFix", resourceCulture);
             }
         }
         

@@ -120,6 +120,9 @@
   <data name="ConstructorDocumentationCodeFix" xml:space="preserve">
     <value>Generate constructor documentation</value>
   </data>
+  <data name="DelegateDocumentationCodeFix" xml:space="preserve">
+    <value>Generate delegate documentation</value>
+  </data>
   <data name="DestructorDocumentationCodeFix" xml:space="preserve">
     <value>Generate destructor documentation</value>
   </data>
@@ -128,6 +131,9 @@
   </data>
   <data name="DestructorStandardTextSecondPart" xml:space="preserve">
     <value> class.</value>
+  </data>
+  <data name="IndexerDocumentationCodeFix" xml:space="preserve">
+    <value>Generate indexer documentation</value>
   </data>
   <data name="InheritdocCodeFix" xml:space="preserve">
     <value>Inherit documentation</value>
