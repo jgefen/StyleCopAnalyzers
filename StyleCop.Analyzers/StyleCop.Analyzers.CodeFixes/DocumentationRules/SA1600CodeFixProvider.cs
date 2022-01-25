@@ -65,8 +65,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
                 case SyntaxKind.MethodDeclaration:
                     MethodDeclarationSyntax methodDeclaration = (MethodDeclarationSyntax)identifierToken.Parent;
-                    if (TaskHelper.IsTaskReturningMethod(semanticModel, methodDeclaration, context.CancellationToken) &&
-                        !IsCoveredByInheritDoc(semanticModel, methodDeclaration, context.CancellationToken))
+                    if (!IsCoveredByInheritDoc(semanticModel, methodDeclaration, context.CancellationToken))
                     {
                         context.RegisterCodeFix(
                             CodeAction.Create(
@@ -152,6 +151,8 @@ namespace StyleCop.Analyzers.DocumentationRules
                 {
                     documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
                     documentationNodes.Add(XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText));
+
+                    // TODO: Add default value
                 }
             }
 
@@ -161,11 +162,15 @@ namespace StyleCop.Analyzers.DocumentationRules
                 {
                     documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
                     documentationNodes.Add(XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText));
+
+                    // TODO: Add default value
                 }
             }
 
             TypeSyntax typeName;
 
+            // TODO: check if task, handle non task cases
+            // TaskHelper.IsTaskReturningMethod(semanticModel, methodDeclaration, context.CancellationToken)
             var typeSymbol = semanticModel.GetSymbolInfo(methodDeclaration.ReturnType, cancellationToken).Symbol as INamedTypeSymbol;
             if (typeSymbol.IsGenericType)
             {
@@ -176,6 +181,7 @@ namespace StyleCop.Analyzers.DocumentationRules
                 typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task");
             }
 
+            // TODO: handle task return documentation
             XmlNodeSyntax[] returnContent =
             {
                 XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementFirstPart),
@@ -206,6 +212,26 @@ namespace StyleCop.Analyzers.DocumentationRules
             }
 
             return insertionIndex;
+        }
+
+        private static string CreateMethodComment(string name)
+        {
+            List<string> parts = SpilitNameAndToLower(name, false);
+            // parts[0] = Pluralizer.Pluralize(parts[0]);
+            parts.Insert(1, "the");
+            return string.Join(" ", parts) + ".";
+        }
+
+        private static List<string> SpilitNameAndToLower(string name, bool isFirstCharacterLower)
+        {
+            List<string> parts = NameSplitter.Split(name);
+
+            int i = isFirstCharacterLower ? 0 : 1;
+            for (; i < parts.Count; i++)
+            {
+                parts[i] = parts[i].ToLower();
+            }
+            return parts;
         }
     }
 }
