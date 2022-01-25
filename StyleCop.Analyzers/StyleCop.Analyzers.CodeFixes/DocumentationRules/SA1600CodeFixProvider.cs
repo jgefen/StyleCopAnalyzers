@@ -169,14 +169,12 @@ namespace StyleCop.Analyzers.DocumentationRules
                 }
             }
 
-            TypeSyntax typeName;
-
             // TODO: check if task, handle non task cases
             if (TaskHelper.IsTaskReturningMethod(semanticModel, methodDeclaration, cancellationToken))
             {
-                var typeSymbol =
-                    semanticModel.GetSymbolInfo(methodDeclaration.ReturnType, cancellationToken).Symbol as
-                        INamedTypeSymbol;
+                TypeSyntax typeName;
+
+                var typeSymbol = semanticModel.GetSymbolInfo(methodDeclaration.ReturnType, cancellationToken).Symbol as INamedTypeSymbol;
                 if (typeSymbol.IsGenericType)
                 {
                     typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task<TResult>");
@@ -197,6 +195,11 @@ namespace StyleCop.Analyzers.DocumentationRules
 
                 documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
                 documentationNodes.Add(XmlSyntaxFactory.ReturnsElement(returnContent));
+            }
+            else
+            {
+                var returnComment = ReturnCommentConstruction.GetReturnCommentConstruction(methodDeclaration.ReturnType);
+                documentationNodes.AddRange(CommentHelper.CreateReturnPartNodes(returnComment));
             }
 
             var documentationComment =
@@ -219,26 +222,6 @@ namespace StyleCop.Analyzers.DocumentationRules
             }
 
             return insertionIndex;
-        }
-
-        private static string CreateMethodComment(string name)
-        {
-            List<string> parts = SpilitNameAndToLower(name, false);
-            // parts[0] = Pluralizer.Pluralize(parts[0]);
-            parts.Insert(1, "the");
-            return string.Join(" ", parts) + ".";
-        }
-
-        private static List<string> SpilitNameAndToLower(string name, bool isFirstCharacterLower)
-        {
-            List<string> parts = NameSplitter.Split(name);
-
-            int i = isFirstCharacterLower ? 0 : 1;
-            for (; i < parts.Count; i++)
-            {
-                parts[i] = parts[i].ToLower();
-            }
-            return parts;
         }
     }
 }

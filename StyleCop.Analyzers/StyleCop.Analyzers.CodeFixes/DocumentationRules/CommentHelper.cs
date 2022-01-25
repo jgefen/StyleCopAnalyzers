@@ -1,5 +1,6 @@
 ﻿namespace StyleCop.Analyzers.DocumentationRules
 {
+    using System;
     using System.Collections.Generic;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -22,27 +23,11 @@
         /// <summary>
         /// Creates parameter comment.
         /// </summary>
-        /// <param name="name">The name.</param>
+        /// <param name="parameter">The parameter.</param>
         /// <returns>The parameter comment.</returns>
         public static string CreateParameterComment(ParameterSyntax parameter)
         {
-            bool isBoolean = false;
-            if (parameter.Type.IsKind(SyntaxKind.PredefinedType))
-            {
-                isBoolean = (parameter.Type as PredefinedTypeSyntax).Keyword.IsKind(SyntaxKind.BoolKeyword);
-            }
-            else if (parameter.Type.IsKind(SyntaxKind.NullableType))
-            {
-                var type = (parameter.Type as NullableTypeSyntax).ElementType as PredefinedTypeSyntax;
-
-                // If it is not predefined type syntax, it should be IdentifierNameSyntax.
-                if (type != null)
-                {
-                    isBoolean = type.Keyword.IsKind(SyntaxKind.BoolKeyword);
-                }
-            }
-
-            if (isBoolean)
+            if (IsBooleanParameter(parameter))
             {
                 return "If true, " + string.Join(" ", SplitNameAndToLower(parameter.Identifier.ValueText, true)) + ".";
             }
@@ -50,6 +35,89 @@
             {
                 return CreateCommonComment(parameter.Identifier.ValueText);
             }
+        }
+
+        /// <summary>
+        /// Creates return part nodes.
+        /// </summary>
+        /// <param name="content">The content.</param>
+        /// <returns>An array of XmlNodeSyntaxes.</returns>
+        public static XmlNodeSyntax[] CreateReturnPartNodes(string content)
+        {
+            ///[0] <returns></returns>[1][2]
+
+            XmlTextSyntax lineStartText = CreateLineStartTextSyntax();
+
+            XmlElementSyntax returnElement = CreateReturnElementSyntax(content);
+
+            XmlTextSyntax lineEndText = CreateLineEndTextSyntax();
+
+            return new XmlNodeSyntax[] { lineStartText, returnElement, lineEndText };
+        }
+
+        private static XmlTextSyntax CreateLineEndTextSyntax()
+        {
+            /*
+                /// <summary>
+                /// The code fix provider.
+                /// </summary>[0]
+            */
+
+            // [0] end line token.
+            SyntaxToken xmlTextNewLineToken = CreateNewLineToken();
+            XmlTextSyntax xmlText = SyntaxFactory.XmlText(xmlTextNewLineToken);
+            return xmlText;
+        }
+
+        private static SyntaxToken CreateNewLineToken()
+        {
+            return SyntaxFactory.XmlTextNewLine(Environment.NewLine, false);
+        }
+
+        private static XmlTextSyntax CreateLineStartTextSyntax()
+        {
+            /*
+                ///[0] <summary>
+                /// The code fix provider.
+                /// </summary>
+            */
+
+            // [0] " " + leading comment exterior trivia
+            SyntaxTriviaList xmlText0Leading = CreateCommentExterior();
+            SyntaxToken xmlText0LiteralToken = SyntaxFactory.XmlTextLiteral(xmlText0Leading, " ", " ", SyntaxFactory.TriviaList());
+            XmlTextSyntax xmlText0 = SyntaxFactory.XmlText(xmlText0LiteralToken);
+            return xmlText0;
+        }
+
+        private static XmlElementSyntax CreateReturnElementSyntax(string content)
+        {
+            XmlNameSyntax xmlName = SyntaxFactory.XmlName("returns");
+            /// <returns>[0]xxx[1]</returns>[2]
+
+            XmlElementStartTagSyntax startTag = SyntaxFactory.XmlElementStartTag(xmlName);
+
+            XmlTextSyntax contentText = SyntaxFactory.XmlText(content);
+
+            XmlElementEndTagSyntax endTag = SyntaxFactory.XmlElementEndTag(xmlName);
+            return SyntaxFactory.XmlElement(startTag, SyntaxFactory.SingletonList<XmlNodeSyntax>(contentText), endTag);
+        }
+
+        private static bool IsBooleanParameter(ParameterSyntax parameter)
+        {
+            if (parameter.Type.IsKind(SyntaxKind.PredefinedType))
+            {
+                return ((PredefinedTypeSyntax)parameter.Type).Keyword.IsKind(SyntaxKind.BoolKeyword);
+            }
+            else if (parameter.Type.IsKind(SyntaxKind.NullableType))
+            {
+                // If it is not predefined type syntax, it should be IdentifierNameSyntax.
+                if (((NullableTypeSyntax)parameter.Type).ElementType is PredefinedTypeSyntax type)
+                {
+                    return type.Keyword.IsKind(SyntaxKind.BoolKeyword);
+                }
+            }
+
+            return false;
         }
 
         private static List<string> SplitNameAndToLower(string name, bool isFirstCharacterLower)
