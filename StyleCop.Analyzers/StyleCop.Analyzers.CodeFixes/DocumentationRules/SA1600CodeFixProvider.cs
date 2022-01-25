@@ -129,22 +129,8 @@ namespace StyleCop.Analyzers.DocumentationRules
             return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(declaration, newElement)));
         }
 
-        private static IEnumerable<XmlNodeSyntax> GetParametersDocumentation(BaseMethodDeclarationSyntax declaration, string newLineText)
-        {
-            if (declaration.ParameterList != null)
-            {
-                foreach (var parameter in declaration.ParameterList.Parameters)
-                {
-                    yield return XmlSyntaxFactory.NewLine(newLineText);
-                    var paramDocumentation = XmlSyntaxFactory.Text(CommentHelper.CreateParameterComment(parameter));
-                    yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
-                }
-            }
-        }
-
         private static Task<Document> GetMethodDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration, CancellationToken cancellationToken)
         {
-            Debugger.Launch();
             SyntaxTriviaList leadingTrivia = methodDeclaration.GetLeadingTrivia();
             int insertionIndex = GetInsertionIndex(ref leadingTrivia);
 
@@ -152,7 +138,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             var documentationNodes = new List<XmlNodeSyntax>();
 
-            var methodNameDocumentation = XmlSyntaxFactory.Text(CommentHelper.CreateMethodComment(methodDeclaration.Identifier.ValueText));
+            var methodNameDocumentation = XmlSyntaxFactory.Text(CommentContentHelper.CreateMethodSummeryText(methodDeclaration.Identifier.ValueText));
             documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText, methodNameDocumentation));
 
             if (methodDeclaration.TypeParameterList != null)
@@ -160,21 +146,20 @@ namespace StyleCop.Analyzers.DocumentationRules
                 foreach (var typeParameter in methodDeclaration.TypeParameterList.Parameters)
                 {
                     documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-                    documentationNodes.Add(XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText));
-
-                    // TODO: Add default value
+                    var paramDocumentation = XmlSyntaxFactory.Text(CommentContentHelper.CreateTypeParameterComment(typeParameter));
+                    documentationNodes.Add(XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText, paramDocumentation));
                 }
             }
 
-            var paramtersDocumentation = GetParametersDocumentation(methodDeclaration, newLineText);
-            documentationNodes.AddRange(paramtersDocumentation);
+            var parametersDocumentation = GetParametersDocumentation(methodDeclaration, newLineText);
+            documentationNodes.AddRange(parametersDocumentation);
 
             // TODO: check if task, handle non task cases
+            var typeSymbol = semanticModel.GetSymbolInfo(methodDeclaration.ReturnType, cancellationToken).Symbol as INamedTypeSymbol;
             if (TaskHelper.IsTaskReturningMethod(semanticModel, methodDeclaration, cancellationToken))
             {
                 TypeSyntax typeName;
 
-                var typeSymbol = semanticModel.GetSymbolInfo(methodDeclaration.ReturnType, cancellationToken).Symbol as INamedTypeSymbol;
                 if (typeSymbol.IsGenericType)
                 {
                     typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task<TResult>");
@@ -196,10 +181,10 @@ namespace StyleCop.Analyzers.DocumentationRules
                 documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
                 documentationNodes.Add(XmlSyntaxFactory.ReturnsElement(returnContent));
             }
-            else
+            else if (typeSymbol.SpecialType != SpecialType.System_Void)
             {
-                var returnComment = ReturnCommentConstruction.GetReturnCommentConstruction(methodDeclaration.ReturnType);
-                documentationNodes.AddRange(CommentHelper.CreateReturnPartNodes(returnComment));
+                documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
+                documentationNodes.Add(CommentContentHelper.CreateReturnElementSyntax(methodDeclaration.ReturnType));
             }
 
             var documentationComment =
@@ -222,6 +207,19 @@ namespace StyleCop.Analyzers.DocumentationRules
             }
 
             return insertionIndex;
+        }
+
+        private static IEnumerable<XmlNodeSyntax> GetParametersDocumentation(BaseMethodDeclarationSyntax declaration, string newLineText)
+        {
+            if (declaration.ParameterList != null)
+            {
+                foreach (var parameter in declaration.ParameterList.Parameters)
+                {
+                    yield return XmlSyntaxFactory.NewLine(newLineText);
+                    var paramDocumentation = XmlSyntaxFactory.Text(CommentContentHelper.CreateParameterSummeryText(parameter));
+                    yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
+                }
+            }
         }
     }
 }
