@@ -735,4 +735,7 @@
   <data name="ParameterDocumentationCodeFix" xml:space="preserve">
     <value>Generate parameter documentation</value>
   </data>
+  <data name="TypeParameterDocumentationCodeFix" xml:space="preserve">
+    <value>Generate type parameter documentation</value>
+  </data>
 </root>
