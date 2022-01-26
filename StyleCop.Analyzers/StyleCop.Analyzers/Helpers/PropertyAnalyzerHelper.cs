@@ -10,14 +10,28 @@ namespace StyleCop.Analyzers.Helpers
 
     public static class PropertyAnalyzerHelper
     {
+        /// <summary>
+        /// Analyzes the indexer accessors.
+        /// </summary>
+        /// <param name="indexerDeclaration">The indexer declaration.</param>
+        /// <param name="semanticModel">The semantic model.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The property data.</returns>
         public static PropertyData AnalyzeIndexerAccessors(
-            IndexerDeclarationSyntax propertyDeclaration,
+            IndexerDeclarationSyntax indexerDeclaration,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            return AnalyzePropertyAccessors(propertyDeclaration, propertyDeclaration.ExpressionBody != null, semanticModel, cancellationToken);
+            return AnalyzePropertyAccessors(indexerDeclaration, indexerDeclaration.ExpressionBody != null, semanticModel, cancellationToken);
         }
 
+        /// <summary>
+        /// Analyzes the property accessors.
+        /// </summary>
+        /// <param name="propertyDeclaration">The property declaration.</param>
+        /// <param name="semanticModel">The semantic model.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The property data.</returns>
         public static PropertyData AnalyzePropertyAccessors(
             PropertyDeclarationSyntax propertyDeclaration,
             SemanticModel semanticModel,

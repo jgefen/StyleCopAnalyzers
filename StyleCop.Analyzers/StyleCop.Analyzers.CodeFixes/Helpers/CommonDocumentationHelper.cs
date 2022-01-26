@@ -48,7 +48,7 @@ namespace StyleCop.Analyzers.Helpers
             return false;
         }
 
-        public static XmlNode CreateCommonComment(string name, bool skipSingleCharIfFirst = false)
+        public static string CreateCommonComment(string name, bool skipSingleCharIfFirst = false)
         {
             return "The " + GetNameDocumentation(name, skipSingleCharIfFirst: skipSingleCharIfFirst);
         }

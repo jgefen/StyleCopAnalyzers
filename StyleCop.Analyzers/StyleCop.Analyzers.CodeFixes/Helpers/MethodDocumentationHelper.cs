@@ -30,7 +30,7 @@ namespace StyleCop.Analyzers.Helpers
         /// </summary>
         /// <param name="expression">The expression.</param>
         /// <param name="newLine">The new line.</param>
-        /// <returns>The xml node syntax list</returns>
+        /// <returns>The xml node syntax list.</returns>
         public static IEnumerable<XmlNodeSyntax> CreateThrowDocumentation(SyntaxNode expression, string newLine)
         {
             var throwStatements = expression.DescendantNodes().OfType<ThrowStatementSyntax>();
@@ -102,7 +102,7 @@ namespace StyleCop.Analyzers.Helpers
         /// </summary>
         /// <param name="newLineText">The new line text.</param>
         /// <param name="returnContent">Content of the return.</param>
-        /// <returns>Create return documentation</returns>
+        /// <returns>Create return documentation.</returns>
         public static IEnumerable<XmlNodeSyntax> CreateReturnDocumentation(
             string newLineText,
             params XmlNodeSyntax[] returnContent)

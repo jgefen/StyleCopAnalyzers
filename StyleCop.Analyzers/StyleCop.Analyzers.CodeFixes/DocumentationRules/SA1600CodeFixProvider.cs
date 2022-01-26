@@ -272,8 +272,7 @@ namespace StyleCop.Analyzers.DocumentationRules
         {
             string newLineText = GetNewLineText(document);
 
-            var documentationText = EventDocumentationHelper.CreateEventDocumentation(identifier);
-            var documentationNode = CommonDocumentationHelper.CreateSummeryNode(documentationText, newLineText);
+            var documentationNode = EventDocumentationHelper.CreateEventDocumentation(identifier, newLineText);
 
             return Task.FromResult(
                 CreateCommentAndReplaceInDocument(document, root, eventDeclaration, newLineText, documentationNode));
