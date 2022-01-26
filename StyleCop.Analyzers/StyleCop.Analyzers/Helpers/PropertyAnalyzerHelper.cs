@@ -10,12 +10,28 @@ namespace StyleCop.Analyzers.Helpers
 
     public static class PropertyAnalyzerHelper
     {
+        public static PropertyData AnalyzeIndexerAccessors(
+            IndexerDeclarationSyntax propertyDeclaration,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
+        {
+            return AnalyzePropertyAccessors(propertyDeclaration, propertyDeclaration.ExpressionBody != null, semanticModel, cancellationToken);
+        }
+
         public static PropertyData AnalyzePropertyAccessors(
             PropertyDeclarationSyntax propertyDeclaration,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            ArrowExpressionClauseSyntax expressionBody = propertyDeclaration.ExpressionBody;
+            return AnalyzePropertyAccessors(propertyDeclaration, propertyDeclaration.ExpressionBody != null, semanticModel, cancellationToken);
+        }
+
+        private static PropertyData AnalyzePropertyAccessors(
+            BasePropertyDeclarationSyntax propertyDeclaration,
+            bool hasExpressionBody,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
+        {
             AccessorDeclarationSyntax getter = null;
             AccessorDeclarationSyntax setter = null;
 
@@ -110,7 +126,7 @@ namespace StyleCop.Analyzers.Helpers
             }
             else
             {
-                if (getter != null || expressionBody != null)
+                if (getter != null || hasExpressionBody)
                 {
                     getterVisible = true;
                     setterVisible = false;

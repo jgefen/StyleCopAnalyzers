@@ -3,8 +3,9 @@
 
 namespace StyleCop.Analyzers.Helpers
 {
+    using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
+    using System.Linq;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -47,7 +48,7 @@ namespace StyleCop.Analyzers.Helpers
         {
             // TODO: check where type.
             var typeParamName = CommonDocumentationHelper.SplitNameAndToLower(parameter.Identifier.Text, true, true);
-            return $"The {typeParamName} parameter type.";
+            return $"The type of the {typeParamName}.";
         }
 
         /// <summary>
@@ -58,6 +59,22 @@ namespace StyleCop.Analyzers.Helpers
         public static XmlTextSyntax CreateReturnElementSyntax(TypeSyntax returnType)
         {
             return XmlSyntaxFactory.Text(GetReturnDocumentationText(returnType));
+        }
+
+        public static IEnumerable<XmlNodeSyntax> CreateThrowDocumentation(SyntaxNode expression, string newLine)
+        {
+            var throwStatements = expression.DescendantNodes().OfType<ThrowStatementSyntax>();
+            foreach (var throwStatement in throwStatements)
+            {
+                if (throwStatement.Expression is not ObjectCreationExpressionSyntax objectCreationExpression)
+                {
+                    continue;
+                }
+
+                var exceptionType = objectCreationExpression.Type;
+                yield return XmlSyntaxFactory.NewLine(newLine);
+                yield return XmlSyntaxFactory.ExceptionElement(SyntaxFactory.TypeCref(exceptionType));
+            }
         }
 
         private static string GetReturnDocumentationText(TypeSyntax returnType)

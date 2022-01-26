@@ -91,7 +91,7 @@ namespace StyleCop.Analyzers.DocumentationRules
                 case SyntaxKind.DelegateDeclaration:
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            DocumentationResources.MethodDocumentationCodeFix,
+                            DocumentationResources.DelegateDocumentationCodeFix,
                             cancellationToken => GetDelegateDocumentationTransformedDocumentAsync(
                                 context.Document,
                                 root,
@@ -109,7 +109,7 @@ namespace StyleCop.Analyzers.DocumentationRules
                     {
                         context.RegisterCodeFix(
                             CodeAction.Create(
-                                DocumentationResources.MethodDocumentationCodeFix,
+                                DocumentationResources.PropertyDocumentationCodeFix,
                                 cancellationToken => GetPropertyDocumentationTransformedDocumentAsync(
                                     context.Document,
                                     root,
@@ -123,13 +123,51 @@ namespace StyleCop.Analyzers.DocumentationRules
                     break;
 
                 case SyntaxKind.ClassDeclaration:
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            DocumentationResources.ClassDocumentationCodeFix,
+                            _ => GetCommonGenericTypeDocumentationTransformedDocumentAsync(
+                                context.Document,
+                                root,
+                                (TypeDeclarationSyntax)identifierToken.Parent,
+                                ((BaseTypeDeclarationSyntax)identifierToken.Parent).Identifier),
+                            nameof(SA1600CodeFixProvider)),
+                        diagnostic);
+
+                    break;
+
                 case SyntaxKind.InterfaceDeclaration:
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            DocumentationResources.InterfaceDocumentationCodeFix,
+                            _ => GetCommonGenericTypeDocumentationTransformedDocumentAsync(
+                                context.Document,
+                                root,
+                                (TypeDeclarationSyntax)identifierToken.Parent,
+                                ((BaseTypeDeclarationSyntax)identifierToken.Parent).Identifier),
+                            nameof(SA1600CodeFixProvider)),
+                        diagnostic);
+
+                    break;
+
                 case SyntaxKind.StructDeclaration:
-                // TODO: add check inheritance?
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            DocumentationResources.StructDocumentationCodeFix,
+                            _ => GetCommonGenericTypeDocumentationTransformedDocumentAsync(
+                                context.Document,
+                                root,
+                                (TypeDeclarationSyntax)identifierToken.Parent,
+                                ((BaseTypeDeclarationSyntax)identifierToken.Parent).Identifier),
+                            nameof(SA1600CodeFixProvider)),
+                        diagnostic);
+
+                    break;
+
                 case SyntaxKind.EnumDeclaration:
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            DocumentationResources.MethodDocumentationCodeFix,
+                            DocumentationResources.EnumDocumentationCodeFix,
                             _ => GetCommonTypeDocumentationTransformedDocumentAsync(
                                 context.Document,
                                 root,
@@ -142,30 +180,123 @@ namespace StyleCop.Analyzers.DocumentationRules
 
                 case SyntaxKind.VariableDeclarator:
                     var fieldDeclaration = identifierToken.Parent.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault();
-                    if (fieldDeclaration == null)
+                    if (fieldDeclaration != null)
                     {
-                        break;
+                        context.RegisterCodeFix(
+                            CodeAction.Create(
+                                DocumentationResources.FieldDocumentationCodeFix,
+                                _ => GetCommonTypeDocumentationTransformedDocumentAsync(
+                                    context.Document,
+                                    root,
+                                    identifierToken.Parent.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault(),
+                                    identifierToken.Parent.AncestorsAndSelf().OfType<VariableDeclaratorSyntax>().First().Identifier),
+                                nameof(SA1600CodeFixProvider)),
+                            diagnostic);
                     }
 
+                    var eventDeclaration = identifierToken.Parent.Ancestors().OfType<EventFieldDeclarationSyntax>().FirstOrDefault();
+                    if (eventDeclaration != null)
+                    {
+                        context.RegisterCodeFix(
+                            CodeAction.Create(
+                                DocumentationResources.EventDocumentationCodeFix,
+                                _ => GetEventFieldDocumentationTransformedDocumentAsync(
+                                    context.Document,
+                                    root,
+                                    identifierToken.Parent.Ancestors().OfType<EventFieldDeclarationSyntax>().FirstOrDefault()),
+                                nameof(SA1600CodeFixProvider)),
+                            diagnostic);
+                    }
+
+                    break;
+
+                case SyntaxKind.IndexerDeclaration:
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            DocumentationResources.MethodDocumentationCodeFix,
-                            _ => GetCommonTypeDocumentationTransformedDocumentAsync(
+                            DocumentationResources.IndexerDocumentationCodeFix,
+                            cancellationToken => GetIndexerDocumentationTransformedDocumentAsync(
                                 context.Document,
                                 root,
-                                identifierToken.Parent.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault(),
-                                identifierToken.Parent.AncestorsAndSelf().OfType<VariableDeclaratorSyntax>().First().Identifier),
+                                semanticModel,
+                                (IndexerDeclarationSyntax)identifierToken.Parent,
+                                cancellationToken),
                             nameof(SA1600CodeFixProvider)),
                         diagnostic);
 
                     break;
 
-                    // TODO: should add the following cases:
-                    // case SyntaxKind.IndexerDeclaration - method with getter setter
-                    // case SyntaxKind.EventDeclaration
-                    // case SyntaxKind.EventFieldDeclaration
+                case SyntaxKind.EventDeclaration:
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            DocumentationResources.EventDocumentationCodeFix,
+                            _ => GetEventDocumentationTransformedDocumentAsync(
+                                context.Document,
+                                root,
+                                (EventDeclarationSyntax)identifierToken.Parent),
+                            nameof(SA1600CodeFixProvider)),
+                        diagnostic);
+
+                    break;
                 }
             }
+        }
+
+        private static Task<Document> GetEventDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            EventDeclarationSyntax eventDeclaration)
+        {
+            return GetEventDocumentationTransformedDocument(
+                document,
+                root,
+                eventDeclaration,
+                eventDeclaration.Identifier);
+        }
+
+        private static Task<Document> GetEventFieldDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            EventFieldDeclarationSyntax eventDeclaration)
+        {
+            return GetEventDocumentationTransformedDocument(
+                document,
+                root,
+                eventDeclaration,
+                eventDeclaration.Declaration.Variables.First().Identifier);
+        }
+
+        private static Task<Document> GetEventDocumentationTransformedDocument(
+            Document document,
+            SyntaxNode root,
+            SyntaxNode eventDeclaration,
+            SyntaxToken identifier)
+        {
+            string newLineText = GetNewLineText(document);
+
+            var documentationText = EventDocumentationHelper.CreateEventDocumentation(identifier);
+            var documentationNode = CreateSummeryNode(documentationText, newLineText);
+
+            return Task.FromResult(
+                CreateCommentAndReplaceInDocument(document, root, eventDeclaration, newLineText, documentationNode));
+        }
+
+        private static Task<Document> GetIndexerDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            SemanticModel semanticModel,
+            IndexerDeclarationSyntax indexerDeclaration,
+            CancellationToken cancellationToken)
+        {
+            string newLineText = GetNewLineText(document);
+
+            var documentationNodes = new List<XmlNodeSyntax>();
+            var indexerSummeryText = PropertyDocumentationHelper.CreateIndexerSummeryComment(indexerDeclaration, semanticModel, cancellationToken);
+            documentationNodes.Add(CreateSummeryNode(indexerSummeryText, newLineText));
+            documentationNodes.AddRange(CreateParametersDocumentation(indexerDeclaration.ParameterList?.Parameters, newLineText));
+            documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
+            documentationNodes.Add(XmlSyntaxFactory.ReturnsElement(XmlSyntaxFactory.Text(DocumentationResources.IndexerReturnDocumentation)));
+
+            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, indexerDeclaration, newLineText, documentationNodes.ToArray()));
         }
 
         private static Task<Document> GetCommonTypeDocumentationTransformedDocumentAsync(
@@ -182,6 +313,22 @@ namespace StyleCop.Analyzers.DocumentationRules
             return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNode));
         }
 
+        private static Task<Document> GetCommonGenericTypeDocumentationTransformedDocumentAsync(
+            Document document,
+            SyntaxNode root,
+            TypeDeclarationSyntax declaration,
+            SyntaxToken declarationIdentifier)
+        {
+            string newLineText = GetNewLineText(document);
+
+            var documentationList = new List<XmlNodeSyntax>();
+            var documentationText = CommonDocumentationHelper.CreateCommonComment(declarationIdentifier.ValueText, declaration.Kind() == SyntaxKind.InterfaceDeclaration);
+            documentationList.Add(CreateSummeryNode(documentationText, newLineText));
+            documentationList.AddRange(CreateTypeParametersDocumentation(declaration.TypeParameterList, newLineText));
+
+            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationList.ToArray()));
+        }
+
         private static Task<Document> GetPropertyDocumentationTransformedDocumentAsync(
             Document document,
             SyntaxNode root,
@@ -191,7 +338,7 @@ namespace StyleCop.Analyzers.DocumentationRules
         {
             string newLineText = GetNewLineText(document);
 
-            var propertyDocumentationText = PropertyDocumentationHelper.CreatePropertyComment(propertyDeclaration, semanticModel, cancellationToken);
+            var propertyDocumentationText = PropertyDocumentationHelper.CreatePropertySummeryComment(propertyDeclaration, semanticModel, cancellationToken);
             var propertyDocumentationNode = CreateSummeryNode(propertyDocumentationText, newLineText);
 
             return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, propertyDeclaration, newLineText, propertyDocumentationNode));
@@ -265,7 +412,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText, standardTextSyntaxList));
 
-            var parametersDocumentation = GetParametersDocumentation(declaration.ParameterList, newLineText);
+            var parametersDocumentation = CreateParametersDocumentation(declaration.ParameterList?.Parameters, newLineText);
             documentationNodes.AddRange(parametersDocumentation);
 
             var documentationComment =
@@ -286,7 +433,8 @@ namespace StyleCop.Analyzers.DocumentationRules
             MethodDeclarationSyntax methodDeclaration,
             CancellationToken cancellationToken)
         {
-            return GetDelegateDocumentationTransformedDocumentAsync(
+            var throwStatements = MethodDocumentationHelper.CreateThrowDocumentation(methodDeclaration.Body, GetNewLineText(document)).ToArray();
+            return GetMethodDocumentationTransformedDocumentAsync(
                 document,
                 root,
                 semanticModel,
@@ -295,7 +443,8 @@ namespace StyleCop.Analyzers.DocumentationRules
                 methodDeclaration.TypeParameterList,
                 methodDeclaration.ParameterList,
                 methodDeclaration.ReturnType,
-                cancellationToken);
+                cancellationToken,
+                throwStatements);
         }
 
         private static Task<Document> GetDelegateDocumentationTransformedDocumentAsync(
@@ -305,7 +454,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             DelegateDeclarationSyntax delegateDeclaration,
             CancellationToken cancellationToken)
         {
-            return GetDelegateDocumentationTransformedDocumentAsync(
+            return GetMethodDocumentationTransformedDocumentAsync(
                 document,
                 root,
                 semanticModel,
@@ -317,7 +466,7 @@ namespace StyleCop.Analyzers.DocumentationRules
                 cancellationToken);
         }
 
-        private static Task<Document> GetDelegateDocumentationTransformedDocumentAsync(
+        private static Task<Document> GetMethodDocumentationTransformedDocumentAsync(
             Document document,
             SyntaxNode root,
             SemanticModel semanticModel,
@@ -326,7 +475,8 @@ namespace StyleCop.Analyzers.DocumentationRules
             TypeParameterListSyntax typeParameterList,
             ParameterListSyntax parameterList,
             TypeSyntax returnType,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            params XmlNodeSyntax[] additionalDocumentation)
         {
             string newLineText = GetNewLineText(document);
 
@@ -335,11 +485,13 @@ namespace StyleCop.Analyzers.DocumentationRules
             var summeryContent = MethodDocumentationHelper.CreateMethodSummeryText(identifier.ValueText);
             documentationNodes.Add(CreateSummeryNode(summeryContent, newLineText));
 
-            documentationNodes.AddRange(GetTypeParametersDocumentation(typeParameterList, newLineText));
+            documentationNodes.AddRange(CreateTypeParametersDocumentation(typeParameterList, newLineText));
 
-            documentationNodes.AddRange(GetParametersDocumentation(parameterList, newLineText));
+            documentationNodes.AddRange(CreateParametersDocumentation(parameterList?.Parameters, newLineText));
 
-            documentationNodes.AddRange(GetReturnDocumentation(semanticModel, returnType, cancellationToken, newLineText));
+            documentationNodes.AddRange(CreateReturnDocumentation(semanticModel, returnType, cancellationToken, newLineText));
+
+            documentationNodes.AddRange(additionalDocumentation);
 
             return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNodes.ToArray()));
         }
@@ -350,13 +502,13 @@ namespace StyleCop.Analyzers.DocumentationRules
             return XmlSyntaxFactory.SummaryElement(newLineText, summerySyntax);
         }
 
-        private static IEnumerable<XmlNodeSyntax> GetReturnDocumentation(
+        private static IEnumerable<XmlNodeSyntax> CreateReturnDocumentation(
             SemanticModel semanticModel,
             TypeSyntax returnType,
             CancellationToken cancellationToken,
             string newLineText)
         {
-            if (semanticModel.GetSymbolInfo(returnType, cancellationToken).Symbol is not INamedTypeSymbol typeSymbol)
+            if (semanticModel.GetSymbolInfo(returnType, cancellationToken).Symbol is not ITypeSymbol typeSymbol)
             {
                 yield break;
             }
@@ -365,7 +517,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             {
                 TypeSyntax typeName;
 
-                if (typeSymbol.IsGenericType)
+                if (((INamedTypeSymbol)typeSymbol).IsGenericType)
                 {
                     typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task<TResult>");
                 }
@@ -392,7 +544,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             }
         }
 
-        private static IEnumerable<XmlNodeSyntax> GetTypeParametersDocumentation(
+        private static IEnumerable<XmlNodeSyntax> CreateTypeParametersDocumentation(
             TypeParameterListSyntax typeParametersList,
             string newLineText)
         {
@@ -420,16 +572,18 @@ namespace StyleCop.Analyzers.DocumentationRules
             return insertionIndex;
         }
 
-        private static IEnumerable<XmlNodeSyntax> GetParametersDocumentation(ParameterListSyntax parametersList, string newLineText)
+        private static IEnumerable<XmlNodeSyntax> CreateParametersDocumentation(IEnumerable<ParameterSyntax> parametersList, string newLineText)
         {
-            if (parametersList != null)
+            if (parametersList == null)
             {
-                foreach (var parameter in parametersList.Parameters)
-                {
-                    yield return XmlSyntaxFactory.NewLine(newLineText);
-                    var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateParameterSummeryText(parameter));
-                    yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
-                }
+                yield break;
+            }
+
+            foreach (var parameter in parametersList)
+            {
+                yield return XmlSyntaxFactory.NewLine(newLineText);
+                var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateParameterSummeryText(parameter));
+                yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
             }
         }
 
