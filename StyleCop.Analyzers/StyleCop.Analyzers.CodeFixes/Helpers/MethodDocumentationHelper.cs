@@ -114,21 +114,44 @@ namespace StyleCop.Analyzers.Helpers
         /// <summary>
         /// Creates the type parameters documentation.
         /// </summary>
-        /// <param name="typeParametersList">The type parameters list.</param>
         /// <param name="newLineText">The new line text.</param>
+        /// <param name="typeParameters">The type parameters.</param>
         /// <returns>The list of xml node syntax for the type parameters documentation.</returns>
         public static IEnumerable<XmlNodeSyntax> CreateTypeParametersDocumentation(
-            TypeParameterListSyntax typeParametersList,
-            string newLineText)
+            string newLineText,
+            params TypeParameterSyntax[] typeParameters)
         {
-            if (typeParametersList == null)
+            if (typeParameters == null)
             {
                 yield break;
             }
 
-            foreach (var typeParameter in typeParametersList.Parameters)
+            foreach (var typeParameter in typeParameters)
             {
                 yield return XmlSyntaxFactory.NewLine(newLineText);
+                var paramDocumentation = XmlSyntaxFactory.Text(CreateTypeParameterComment(typeParameter));
+                yield return XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText, paramDocumentation);
+            }
+        }
+
+        /// <summary>
+        /// Creates the type parameters documentation.
+        /// </summary>
+        /// <param name="leadingNewLine">The new line syntax node.</param>
+        /// <param name="typeParameters">The type parameters.</param>
+        /// <returns>The list of xml node syntax for the type parameters documentation.</returns>
+        public static IEnumerable<XmlNodeSyntax> CreateTypeParametersDocumentationWithLeadingLine(
+            XmlNodeSyntax leadingNewLine,
+            params TypeParameterSyntax[] typeParameters)
+        {
+            if (typeParameters == null)
+            {
+                yield break;
+            }
+
+            foreach (var typeParameter in typeParameters)
+            {
+                yield return leadingNewLine;
                 var paramDocumentation = XmlSyntaxFactory.Text(CreateTypeParameterComment(typeParameter));
                 yield return XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText, paramDocumentation);
             }

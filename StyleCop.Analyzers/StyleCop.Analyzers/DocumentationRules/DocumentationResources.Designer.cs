@@ -1898,6 +1898,15 @@ namespace StyleCop.Analyzers.DocumentationRules {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Generate type parameter documentation.
+        /// </summary>
+        internal static string TypeParameterDocumentationCodeFix {
+            get {
+                return ResourceManager.GetString("TypeParameterDocumentationCodeFix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to class.
         /// </summary>
         internal static string TypeTextClass {

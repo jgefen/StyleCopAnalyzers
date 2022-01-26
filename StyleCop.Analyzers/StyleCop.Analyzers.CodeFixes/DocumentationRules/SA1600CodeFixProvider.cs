@@ -318,7 +318,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             TypeDeclarationSyntax declaration,
             SyntaxToken declarationIdentifier)
         {
-            var typeParamsDocumentation = MethodDocumentationHelper.CreateTypeParametersDocumentation(declaration.TypeParameterList, GetNewLineText(document)).ToArray();
+            var typeParamsDocumentation = MethodDocumentationHelper.CreateTypeParametersDocumentation(GetNewLineText(document), declaration.TypeParameterList?.Parameters.ToArray()).ToArray();
             return GetCommonTypeDocumentationTransformedDocumentAsync(document, root, declaration, declarationIdentifier, typeParamsDocumentation);
         }
 
@@ -425,7 +425,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             documentationNodes.Add(MethodDocumentationHelper.CreateMethodSummeryText(identifier.ValueText, newLineText));
 
-            documentationNodes.AddRange(MethodDocumentationHelper.CreateTypeParametersDocumentation(typeParameterList, newLineText));
+            documentationNodes.AddRange(MethodDocumentationHelper.CreateTypeParametersDocumentation(newLineText, typeParameterList?.Parameters.ToArray()));
 
             documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(newLineText, parameterList?.Parameters.ToArray()));
 

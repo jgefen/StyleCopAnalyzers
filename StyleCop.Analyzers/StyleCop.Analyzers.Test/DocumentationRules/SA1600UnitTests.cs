@@ -673,7 +673,7 @@ public class TestClass
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
         [Fact]
-        public async Task TestFixForMethodsAsync()
+        public async Task TestMethodsCodeFixAsync()
         {
             var testCode = @"
 using System.Collections.Generic;
@@ -710,6 +710,12 @@ public class TestClass
     public List<string> DoSomething5()
     {
         return null;
+    }
+
+    public List<string> DoSomething6()
+    {
+        throw new System.NotImplementedException();
+        throw new System.Exception();
     }
 }
 ";
@@ -778,6 +784,18 @@ public class TestClass
     {
         return null;
     }
+
+    /// <summary>
+    /// Do something6.
+    /// </summary>
+    /// <returns>A list of string.</returns>
+    /// <exception cref=""System.NotImplementedException""></exception>
+    /// <exception cref=""System.Exception""></exception>
+    public List<string> DoSomething6()
+    {
+        throw new System.NotImplementedException();
+        throw new System.Exception();
+    }
 }
 ";
 
@@ -792,6 +810,566 @@ public class TestClass
                     Diagnostic().WithLocation(23, 16),
                     Diagnostic().WithLocation(28, 40),
                     Diagnostic().WithLocation(33, 25),
+                    Diagnostic().WithLocation(38, 25),
+                },
+                FixedCode = fixedTestCode,
+                DisabledDiagnostics = { "CS1591" },
+            }.RunAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Verifies that a code fix is offered for class without documentation.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+        [Fact]
+        public async Task TestClassCodeFixAsync()
+        {
+            var testCode = @"
+public class TestClass
+{
+}
+
+public class TestClass2<T>
+{
+}
+
+public class TestClass3<TType>
+{
+}
+";
+
+            var fixedTestCode = @"
+/// <summary>
+/// The test class.
+/// </summary>
+public class TestClass
+{
+}
+
+/// <summary>
+/// The test class2.
+/// </summary>
+/// <typeparam name=""T"">The type of T.</typeparam>
+public class TestClass2<T>
+{
+}
+
+/// <summary>
+/// The test class3.
+/// </summary>
+/// <typeparam name=""TType"">The type of the type.</typeparam>
+public class TestClass3<TType>
+{
+}
+";
+
+            await new CSharpTest(this.LanguageVersion)
+            {
+                TestCode = testCode,
+                ExpectedDiagnostics =
+                {
+                    Diagnostic().WithLocation(2, 14),
+                    Diagnostic().WithLocation(6, 14),
+                    Diagnostic().WithLocation(10, 14),
+                },
+                FixedCode = fixedTestCode,
+                DisabledDiagnostics = { "CS1591" },
+            }.RunAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Verifies that a code fix is offered for interface without documentation.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+        [Fact]
+        public async Task TestInterfaceCodeFixAsync()
+        {
+            var testCode = @"
+public interface TestService
+{
+}
+
+public interface TestService2<T>
+{
+}
+
+public interface TestService3<TType>
+{
+}
+";
+
+            var fixedTestCode = @"
+/// <summary>
+/// The test service.
+/// </summary>
+public interface TestService
+{
+}
+
+/// <summary>
+/// The test service2.
+/// </summary>
+/// <typeparam name=""T"">The type of T.</typeparam>
+public interface TestService2<T>
+{
+}
+
+/// <summary>
+/// The test service3.
+/// </summary>
+/// <typeparam name=""TType"">The type of the type.</typeparam>
+public interface TestService3<TType>
+{
+}
+";
+
+            await new CSharpTest(this.LanguageVersion)
+            {
+                TestCode = testCode,
+                ExpectedDiagnostics =
+                {
+                    Diagnostic().WithLocation(2, 18),
+                    Diagnostic().WithLocation(6, 18),
+                    Diagnostic().WithLocation(10, 18),
+                },
+                FixedCode = fixedTestCode,
+                DisabledDiagnostics = { "CS1591" },
+            }.RunAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Verifies that a code fix is offered for struct without documentation.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+        [Fact]
+        public async Task TestStructCodeFixAsync()
+        {
+            var testCode = @"
+public struct TestStruct
+{
+}
+
+public struct TestStruct2<T>
+{
+}
+
+public struct TestStruct3<TType>
+{
+}
+";
+
+            var fixedTestCode = @"
+/// <summary>
+/// The test struct.
+/// </summary>
+public struct TestStruct
+{
+}
+
+/// <summary>
+/// The test struct2.
+/// </summary>
+/// <typeparam name=""T"">The type of T.</typeparam>
+public struct TestStruct2<T>
+{
+}
+
+/// <summary>
+/// The test struct3.
+/// </summary>
+/// <typeparam name=""TType"">The type of the type.</typeparam>
+public struct TestStruct3<TType>
+{
+}
+";
+
+            await new CSharpTest(this.LanguageVersion)
+            {
+                TestCode = testCode,
+                ExpectedDiagnostics =
+                {
+                    Diagnostic().WithLocation(2, 15),
+                    Diagnostic().WithLocation(6, 15),
+                    Diagnostic().WithLocation(10, 15),
+                },
+                FixedCode = fixedTestCode,
+                DisabledDiagnostics = { "CS1591" },
+            }.RunAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Verifies that a code fix is offered for enum without documentation.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+        [Fact]
+        public async Task TestEnumCodeFixAsync()
+        {
+            var testCode = @"
+public enum TestEnum
+{
+}
+";
+
+            var fixedTestCode = @"
+/// <summary>
+/// The test enum.
+/// </summary>
+public enum TestEnum
+{
+}
+";
+
+            await new CSharpTest(this.LanguageVersion)
+            {
+                TestCode = testCode,
+                ExpectedDiagnostics =
+                {
+                    Diagnostic().WithLocation(2, 13),
+                },
+                FixedCode = fixedTestCode,
+                DisabledDiagnostics = { "CS1591" },
+            }.RunAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Verifies that a code fix is offered for property without documentation.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+        [Fact]
+        public async Task TestPropertyCodeFixAsync()
+        {
+            var testCode = @"
+/// <summary>
+/// The test class
+/// </summary>
+public class TestClass
+{
+    public string TestProperty { get; set; }
+
+    public string TestProperty2 { get; private set; }
+
+    public string TestProperty3 { get; internal set; }
+
+    public string TestProperty4 { get; }
+}
+";
+
+            var fixedTestCode = @"
+/// <summary>
+/// The test class
+/// </summary>
+public class TestClass
+{
+    /// <summary>
+    /// Gets or sets the test property.
+    /// </summary>
+    public string TestProperty { get; set; }
+
+    /// <summary>
+    /// Gets the test property2.
+    /// </summary>
+    public string TestProperty2 { get; private set; }
+
+    /// <summary>
+    /// Gets the test property3.
+    /// </summary>
+    public string TestProperty3 { get; internal set; }
+
+    /// <summary>
+    /// Gets the test property4.
+    /// </summary>
+    public string TestProperty4 { get; }
+}
+";
+
+            await new CSharpTest(this.LanguageVersion)
+            {
+                TestCode = testCode,
+                ExpectedDiagnostics =
+                {
+                    Diagnostic().WithLocation(7, 19),
+                    Diagnostic().WithLocation(9, 19),
+                    Diagnostic().WithLocation(11, 19),
+                    Diagnostic().WithLocation(13, 19),
+                },
+                FixedCode = fixedTestCode,
+                DisabledDiagnostics = { "CS1591" },
+            }.RunAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Verifies that a code fix is offered for event without documentation.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+        [Fact]
+        public async Task TestEventCodeFixAsync()
+        {
+            var testCode = @"
+using System;
+
+/// <summary>
+/// The test class.
+/// </summary>
+public class TestClass
+{
+    public event System.Action myEvent;
+
+    public event System.Action MyEventProperty
+    {
+        add
+        {
+            this.myEvent += value;
+        }
+        remove
+        {
+            this.myEvent -= value;
+        }
+    }
+}
+";
+
+            var fixedTestCode = @"
+using System;
+
+/// <summary>
+/// The test class.
+/// </summary>
+public class TestClass
+{
+    /// <summary>
+    /// Occurs when my event.
+    /// </summary>
+    public event System.Action myEvent;
+
+    /// <summary>
+    /// Occurs when my event property.
+    /// </summary>
+    public event System.Action MyEventProperty
+    {
+        add
+        {
+            this.myEvent += value;
+        }
+        remove
+        {
+            this.myEvent -= value;
+        }
+    }
+}
+";
+
+            await new CSharpTest(this.LanguageVersion)
+            {
+                TestCode = testCode,
+                ExpectedDiagnostics =
+                {
+                    Diagnostic().WithLocation(9, 32),
+                    Diagnostic().WithLocation(11, 32),
+                },
+                FixedCode = fixedTestCode,
+                DisabledDiagnostics = { "CS1591" },
+            }.RunAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Verifies that a code fix is offered for event without documentation.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+        [Fact]
+        public async Task TestIndexerCodeFixAsync()
+        {
+            var testCode = @"
+/// <summary>
+/// The test class.
+/// </summary>
+public class TestClass
+{
+    public int this[string a, int b]
+    {
+        get 
+        {
+            return 0;
+        }
+        set 
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}
+
+/// <summary>
+/// The test class2.
+/// </summary>
+public class TestClass2
+{
+    public int this[string a, int b]
+    {
+        get 
+        {
+            return 0;
+        }
+        private set 
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}
+
+/// <summary>
+/// The test class3.
+/// </summary>
+public class TestClass3
+{
+    public int this[string a, int b]
+    {
+        get 
+        {
+            return 0;
+        }
+        internal set 
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}
+";
+
+            var fixedTestCode = @"
+/// <summary>
+/// The test class.
+/// </summary>
+public class TestClass
+{
+    /// <summary>
+    /// Gets or sets the element at the specified index.
+    /// </summary>
+    /// <param name=""a"">The a.</param>
+    /// <param name=""b"">The b.</param>
+    /// <returns>The element at the specified index.</returns>
+    public int this[string a, int b]
+    {
+        get 
+        {
+            return 0;
+        }
+        set 
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}
+
+/// <summary>
+/// The test class2.
+/// </summary>
+public class TestClass2
+{
+    /// <summary>
+    /// Gets the element at the specified index.
+    /// </summary>
+    /// <param name=""a"">The a.</param>
+    /// <param name=""b"">The b.</param>
+    /// <returns>The element at the specified index.</returns>
+    public int this[string a, int b]
+    {
+        get 
+        {
+            return 0;
+        }
+        private set 
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}
+
+/// <summary>
+/// The test class3.
+/// </summary>
+public class TestClass3
+{
+    /// <summary>
+    /// Gets the element at the specified index.
+    /// </summary>
+    /// <param name=""a"">The a.</param>
+    /// <param name=""b"">The b.</param>
+    /// <returns>The element at the specified index.</returns>
+    public int this[string a, int b]
+    {
+        get 
+        {
+            return 0;
+        }
+        internal set 
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}
+";
+
+            await new CSharpTest(this.LanguageVersion)
+            {
+                TestCode = testCode,
+                ExpectedDiagnostics =
+                {
+                    Diagnostic().WithLocation(7, 16),
+                    Diagnostic().WithLocation(25, 16),
+                    Diagnostic().WithLocation(43, 16),
+                },
+                FixedCode = fixedTestCode,
+                DisabledDiagnostics = { "CS1591" },
+            }.RunAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Verifies that a code fix is offered for delegate without documentation.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+        [Fact]
+        public async Task TestDelegateCodeFixAsync()
+        {
+            var testCode = @"
+/// <summary>
+/// The test class
+/// </summary>
+class TestClass
+{
+    public delegate int TestDelegate(string a);
+
+    public delegate string TestDelegate2(string a);
+}
+";
+
+            var fixedTestCode = @"
+/// <summary>
+/// The test class
+/// </summary>
+class TestClass
+{
+    /// <summary>
+    /// Test delegate.
+    /// </summary>
+    /// <param name=""a"">The a.</param>
+    /// <returns>An int.</returns>
+    public delegate int TestDelegate(string a);
+
+    /// <summary>
+    /// Test delegate2.
+    /// </summary>
+    /// <param name=""a"">The a.</param>
+    /// <returns>A string.</returns>
+    public delegate string TestDelegate2(string a);
+}
+";
+
+            await new CSharpTest(this.LanguageVersion)
+            {
+                TestCode = testCode,
+                ExpectedDiagnostics =
+                {
+                    Diagnostic().WithLocation(7, 25),
+                    Diagnostic().WithLocation(9, 28),
                 },
                 FixedCode = fixedTestCode,
                 DisabledDiagnostics = { "CS1591" },
@@ -1391,7 +1969,7 @@ public class OuterClass : BaseClass, IInterface
         {{
             _myEvent -= value;
         }}
-    }}
+}}
 }}
 #pragma warning disable SA1600 // the following code is used for ensuring the above code compiles
 public class BaseClass : IInterface {{ public event System.Action MyEvent; }}

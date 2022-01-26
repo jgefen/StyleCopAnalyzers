@@ -16,14 +16,14 @@ namespace StyleCop.Analyzers.DocumentationRules
     using Microsoft.CodeAnalysis.Formatting;
     using StyleCop.Analyzers.Helpers;
 
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(SA1611CodeFixProvider))]
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(SA1618CodeFixProvider))]
     [Shared]
-    internal class SA1611CodeFixProvider : CodeFixProvider
+    internal class SA1618CodeFixProvider : CodeFixProvider
     {
         /// <inheritdoc/>
         public override ImmutableArray<string> FixableDiagnosticIds { get; } =
             ImmutableArray.Create(
-                SA1611ElementParametersMustBeDocumented.DiagnosticId);
+                SA1618GenericTypeParametersMustBeDocumented.DiagnosticId);
 
         /// <inheritdoc/>
         public override FixAllProvider GetFixAllProvider()
@@ -45,41 +45,35 @@ namespace StyleCop.Analyzers.DocumentationRules
                     continue;
                 }
 
-                var parmaterSyntax = (ParameterSyntax)identifierToken.Parent;
+                var typeParameterSyntax = (TypeParameterSyntax)identifierToken.Parent;
 
-                // Declaration --> ParameterList --> Parameter
-                var parentDeclaration = parmaterSyntax.Parent.Parent;
+                // Declaration --> TypeParameterList --> TypeParameter
+                var parentDeclaration = typeParameterSyntax.Parent.Parent;
                 switch (parentDeclaration.Kind())
                 {
-                case SyntaxKind.ConstructorDeclaration:
                 case SyntaxKind.MethodDeclaration:
                 case SyntaxKind.DelegateDeclaration:
-                case SyntaxKind.IndexerDeclaration:
+                case SyntaxKind.ClassDeclaration:
+                case SyntaxKind.StructDeclaration:
+                case SyntaxKind.InterfaceDeclaration:
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            DocumentationResources.ParameterDocumentationCodeFix,
-                            cancellationToken => GetParameterDocumentationTransformedDocumentAsync(context.Document, root, parentDeclaration, parmaterSyntax),
-                            nameof(SA1611CodeFixProvider)),
+                            DocumentationResources.TypeParameterDocumentationCodeFix,
+                            cancellationToken => GetTypeParameterDocumentationTransformedDocumentAsync(context.Document, root, parentDeclaration, typeParameterSyntax),
+                            nameof(SA1618CodeFixProvider)),
                         diagnostic);
                     break;
                 }
             }
         }
 
-        private static Task<Document> GetParameterDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SyntaxNode parent, ParameterSyntax parameterSyntax)
+        private static Task<Document> GetTypeParameterDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SyntaxNode parent, TypeParameterSyntax parameterSyntax)
         {
             string newLineText = document.Project.Solution.Workspace.Options.GetOption(FormattingOptions.NewLine, LanguageNames.CSharp);
             var documentation = parent.GetDocumentationCommentTriviaSyntax();
 
             var parameters = GetParentDeclarationParameters(parameterSyntax).ToList();
-            var prevNode = ParameterDocumentationHelper.GetParameterDocumentationPrevNode(parent, parameterSyntax, parameters, s => s.Identifier, XmlCommentHelper.ParamXmlTag);
-
-            if (prevNode == null)
-            {
-                prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.TypeParamXmlTag).LastOrDefault();
-            }
-
-            // last fallback Summery or first in existing XML doc
+            var prevNode = ParameterDocumentationHelper.GetParameterDocumentationPrevNode(parent, parameterSyntax, parameters, s => s.Identifier, XmlCommentHelper.TypeParamXmlTag);
             if (prevNode == null)
             {
                 prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.SummaryXmlTag).FirstOrDefault() ?? documentation.Content.First();
@@ -96,16 +90,15 @@ namespace StyleCop.Analyzers.DocumentationRules
                 leadingNewLine = leadingNewLine.ReplaceExteriorTrivia(exteriorTrivia);
             }
 
-            var parameterDocumentation = MethodDocumentationHelper.CreateParametersDocumentationWithLeadingLine(leadingNewLine, parameterSyntax);
+            var parameterDocumentation = MethodDocumentationHelper.CreateTypeParametersDocumentationWithLeadingLine(leadingNewLine, parameterSyntax);
             var newDocumentation = documentation.InsertNodesAfter(prevNode, parameterDocumentation);
 
             return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(documentation, newDocumentation)));
         }
 
-        private static IEnumerable<ParameterSyntax> GetParentDeclarationParameters(ParameterSyntax parameterSyntax)
+        private static IEnumerable<TypeParameterSyntax> GetParentDeclarationParameters(TypeParameterSyntax parameterSyntax)
         {
-            return (parameterSyntax.Parent as ParameterListSyntax)?.Parameters
-                ?? (parameterSyntax.Parent as BracketedParameterListSyntax)?.Parameters;
+            return (parameterSyntax.Parent as TypeParameterListSyntax)?.Parameters;
         }
     }
 }
