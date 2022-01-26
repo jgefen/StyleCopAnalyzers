@@ -25,9 +25,12 @@ namespace StyleCop.Analyzers.Helpers
 
         public static string SplitNameAndToLower(string name, bool isFirstCharacterLower, bool skipSingleCharIfFirst = false)
         {
-            return string.Join(" ", NameSplitter.Split(name)
+            var splitName = NameSplitter.Split(name)
                 .Select((n, i) => !isFirstCharacterLower && i == 0 ? n : n.ToLower())
-                .SkipWhile((n, i) => skipSingleCharIfFirst && i == 0 && n.Length == 1));
+                .ToList();
+
+            var skipFirst = splitName.Count != 1 && skipSingleCharIfFirst && splitName[0].Length == 1;
+            return string.Join(" ", skipFirst ? splitName.Skip(1) : splitName);
         }
 
         public static bool IsBooleanParameter(TypeSyntax type)

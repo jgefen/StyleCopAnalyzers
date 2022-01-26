@@ -585,8 +585,8 @@ public class Test1
     /// <summary>
     /// Initializes a new instance of the <see cref=""Test1""/> class.
     /// </summary>
-    /// <param name=""param1""></param>
-    /// <param name=""param2""></param>
+    /// <param name=""param1"">The param1.</param>
+    /// <param name=""param2"">If true, param2.</param>
     public Test1(int param1, bool param2)
     {
     }
@@ -600,8 +600,8 @@ public struct Test2
     /// <summary>
     /// Initializes a new instance of the <see cref=""Test2""/> struct.
     /// </summary>
-    /// <param name=""param1""></param>
-    /// <param name=""param2""></param>
+    /// <param name=""param1"">The param1.</param>
+    /// <param name=""param2"">If true, param2.</param>
     public Test2(int param1, bool param2)
     {
     }
@@ -669,13 +669,15 @@ public class TestClass
         }
 
         /// <summary>
-        /// Verifies that a code fix is not offered for normal methods without documentation.
+        /// Verifies that a code fix is offered for methods without documentation.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
         [Fact]
-        public async Task TestNoFixForNormalMethodsAsync()
+        public async Task TestFixForMethodsAsync()
         {
             var testCode = @"
+using System.Collections.Generic;
+
 /// <summary>
 /// Test class.
 /// </summary>
@@ -689,6 +691,93 @@ public class TestClass
     {
         return 0;
     }
+
+    public int DoSomething3(int a, bool b, bool? c)
+    {
+        return 0;
+    }
+
+    public int DoSomething3<TType>(int a)
+    {
+        return 0;
+    }
+
+    public IReadOnlyCollection<string> DoSomething4()
+    {
+        return null;
+    }
+
+    public List<string> DoSomething5()
+    {
+        return null;
+    }
+}
+";
+
+            var fixedTestCode = @"
+using System.Collections.Generic;
+
+/// <summary>
+/// Test class.
+/// </summary>
+public class TestClass
+{
+    /// <summary>
+    /// Do something.
+    /// </summary>
+    public void DoSomething()
+    {
+    }
+
+    /// <summary>
+    /// Do something2.
+    /// </summary>
+    /// <returns>An int.</returns>
+    public int DoSomething2()
+    {
+        return 0;
+    }
+
+    /// <summary>
+    /// Do something3.
+    /// </summary>
+    /// <param name=""a"">The a.</param>
+    /// <param name=""b"">If true, b.</param>
+    /// <param name=""c"">If true, c.</param>
+    /// <returns>An int.</returns>
+    public int DoSomething3(int a, bool b, bool? c)
+    {
+        return 0;
+    }
+
+    /// <summary>
+    /// Do something3.
+    /// </summary>
+    /// <typeparam name=""TType"">The type of the type.</typeparam>
+    /// <param name=""a"">The a.</param>
+    /// <returns>An int.</returns>
+    public int DoSomething3<TType>(int a)
+    {
+        return 0;
+    }
+
+    /// <summary>
+    /// Do something4.
+    /// </summary>
+    /// <returns>A read only collection of string.</returns>
+    public IReadOnlyCollection<string> DoSomething4()
+    {
+        return null;
+    }
+
+    /// <summary>
+    /// Do something5.
+    /// </summary>
+    /// <returns>A list of string.</returns>
+    public List<string> DoSomething5()
+    {
+        return null;
+    }
 }
 ";
 
@@ -697,10 +786,14 @@ public class TestClass
                 TestCode = testCode,
                 ExpectedDiagnostics =
                 {
-                    Diagnostic().WithLocation(7, 17),
-                    Diagnostic().WithLocation(11, 16),
+                    Diagnostic().WithLocation(9, 17),
+                    Diagnostic().WithLocation(13, 16),
+                    Diagnostic().WithLocation(18, 16),
+                    Diagnostic().WithLocation(23, 16),
+                    Diagnostic().WithLocation(28, 40),
+                    Diagnostic().WithLocation(33, 25),
                 },
-                FixedCode = testCode,
+                FixedCode = fixedTestCode,
                 DisabledDiagnostics = { "CS1591" },
             }.RunAsync(CancellationToken.None).ConfigureAwait(false);
         }
@@ -764,7 +857,7 @@ using System.Threading.Tasks;
 public {typeKeyword} Test
 {{
     /// <summary>
-    ///
+    /// Test method1.
     /// </summary>
     /// <returns>A <see cref=""Task""/> representing the result of the asynchronous operation.</returns>
     public Task TestMethod1()
@@ -773,7 +866,7 @@ public {typeKeyword} Test
     }}
 
     /// <summary>
-    ///
+    /// Test method2.
     /// </summary>
     /// <returns>A <see cref=""Task{{TResult}}""/> representing the result of the asynchronous operation.</returns>
     public Task<int> TestMethod2()
@@ -782,9 +875,9 @@ public {typeKeyword} Test
     }}
 
     /// <summary>
-    ///
+    /// Test method3.
     /// </summary>
-    /// <typeparam name=""T""></typeparam>
+    /// <typeparam name=""T"">The type of T.</typeparam>
     /// <returns>A <see cref=""Task{{TResult}}""/> representing the result of the asynchronous operation.</returns>
     public Task<T> TestMethod3<T>()
     {{
@@ -792,10 +885,10 @@ public {typeKeyword} Test
     }}
 
     /// <summary>
-    ///
+    /// Test method4.
     /// </summary>
-    /// <param name=""param1""></param>
-    /// <param name=""param2""></param>
+    /// <param name=""param1"">The param1.</param>
+    /// <param name=""param2"">The param2.</param>
     /// <returns>A <see cref=""Task""/> representing the result of the asynchronous operation.</returns>
     public Task TestMethod4(int param1, int param2)
     {{
@@ -803,10 +896,10 @@ public {typeKeyword} Test
     }}
 
     /// <summary>
-    ///
+    /// Test method5.
     /// </summary>
-    /// <param name=""param1""></param>
-    /// <param name=""param2""></param>
+    /// <param name=""param1"">The param1.</param>
+    /// <param name=""param2"">The param2.</param>
     /// <returns>A <see cref=""Task{{TResult}}""/> representing the result of the asynchronous operation.</returns>
     public Task<int> TestMethod5(int param1, int param2)
     {{
@@ -814,11 +907,11 @@ public {typeKeyword} Test
     }}
 
     /// <summary>
-    ///
+    /// Test method6.
     /// </summary>
-    /// <typeparam name=""T""></typeparam>
-    /// <param name=""param1""></param>
-    /// <param name=""param2""></param>
+    /// <typeparam name=""T"">The type of T.</typeparam>
+    /// <param name=""param1"">The param1.</param>
+    /// <param name=""param2"">The param2.</param>
     /// <returns>A <see cref=""Task{{TResult}}""/> representing the result of the asynchronous operation.</returns>
     public Task<T> TestMethod6<T>(T param1, int param2)
     {{

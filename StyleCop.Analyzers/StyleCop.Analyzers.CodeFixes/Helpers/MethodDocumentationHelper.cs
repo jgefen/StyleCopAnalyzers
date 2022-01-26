@@ -129,7 +129,7 @@ namespace StyleCop.Analyzers.Helpers
             foreach (var typeParameter in typeParametersList.Parameters)
             {
                 yield return XmlSyntaxFactory.NewLine(newLineText);
-                var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateTypeParameterComment(typeParameter));
+                var paramDocumentation = XmlSyntaxFactory.Text(CreateTypeParameterComment(typeParameter));
                 yield return XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText, paramDocumentation);
             }
         }
@@ -256,7 +256,15 @@ namespace StyleCop.Analyzers.Helpers
         private static string CreateTypeParameterComment(TypeParameterSyntax parameter)
         {
             var typeParamName = CommonDocumentationHelper.SplitNameAndToLower(parameter.Identifier.Text, true, true);
-            return $"The type of the {typeParamName}.";
+            var prefix = "The type of ";
+            if (typeParamName.Length == 1)
+            {
+                return prefix + typeParamName.ToUpper() + ".";
+            }
+            else
+            {
+                return prefix + "the " + typeParamName + ".";
+            }
         }
 
         private static XmlTextSyntax CreateReturnDocumentationContent(TypeSyntax returnType)
