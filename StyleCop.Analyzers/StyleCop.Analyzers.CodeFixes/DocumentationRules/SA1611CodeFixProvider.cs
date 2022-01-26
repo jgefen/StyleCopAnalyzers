@@ -7,6 +7,7 @@ namespace StyleCop.Analyzers.DocumentationRules
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Composition;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -46,80 +47,112 @@ namespace StyleCop.Analyzers.DocumentationRules
                     continue;
                 }
 
-                switch (identifierToken.Parent.Kind())
+                var parmaterSyntax = (ParameterSyntax)identifierToken.Parent;
+
+                // Declaration --> ParameterList --> Parameter
+                var parentDeclaration = parmaterSyntax.Parent.Parent;
+                switch (parentDeclaration.Kind())
                 {
-                case SyntaxKind.ConstructorDeclaration:
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            DocumentationResources.ConstructorDocumentationCodeFix,
-                            cancellationToken => GetConstructorDocumentationTransformedDocumentAsync(context.Document, root, (BaseMethodDeclarationSyntax)identifierToken.Parent, cancellationToken),
-                            nameof(SA1600CodeFixProvider)),
-                        diagnostic);
-                    break;
+                //case SyntaxKind.ConstructorDeclaration:
+                //    context.RegisterCodeFix(
+                //        CodeAction.Create(
+                //            DocumentationResources.ConstructorDocumentationCodeFix,
+                //            cancellationToken => GetConstructorDocumentationTransformedDocumentAsync(context.Document, root, (BaseMethodDeclarationSyntax)identifierToken.Parent, cancellationToken),
+                //            nameof(SA1600CodeFixProvider)),
+                //        diagnostic);
+                //    break;
 
                 case SyntaxKind.MethodDeclaration:
                     context.RegisterCodeFix(
                         CodeAction.Create(
                             DocumentationResources.MethodDocumentationCodeFix,
-                            cancellationToken => GetMethodDocumentationTransformedDocumentAsync(context.Document, root, (BaseMethodDeclarationSyntax)identifierToken.Parent, cancellationToken),
+                            cancellationToken => GetMethodDocumentationTransformedDocumentAsync(context.Document, root, parentDeclaration, parmaterSyntax, cancellationToken),
                             nameof(SA1600CodeFixProvider)),
                         diagnostic);
                     break;
 
-                case SyntaxKind.DelegateDeclaration:
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            DocumentationResources.DelegateDocumentationCodeFix,
-                            cancellationToken => GetDelegateDocumentationTransformedDocumentAsync(context.Document, root, (DelegateDeclarationSyntax)identifierToken.Parent, cancellationToken),
-                            nameof(SA1600CodeFixProvider)),
-                        diagnostic);
-                    break;
-                case SyntaxKind.IndexerDeclaration:
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            DocumentationResources.IndexerDocumentationCodeFix,
-                            cancellationToken => GetIndexerDocumentationTransformedDocumentAsync(context.Document, root, (IndexerDeclarationSyntax)identifierToken.Parent, cancellationToken),
-                            nameof(SA1600CodeFixProvider)),
-                        diagnostic);
-                    break;
+                //case SyntaxKind.DelegateDeclaration:
+                //    context.RegisterCodeFix(
+                //        CodeAction.Create(
+                //            DocumentationResources.DelegateDocumentationCodeFix,
+                //            cancellationToken => GetDelegateDocumentationTransformedDocumentAsync(context.Document, root, (DelegateDeclarationSyntax)identifierToken.Parent, cancellationToken),
+                //            nameof(SA1600CodeFixProvider)),
+                //        diagnostic);
+                //    break;
+                //case SyntaxKind.IndexerDeclaration:
+                //    context.RegisterCodeFix(
+                //        CodeAction.Create(
+                //            DocumentationResources.IndexerDocumentationCodeFix,
+                //            cancellationToken => GetIndexerDocumentationTransformedDocumentAsync(context.Document, root, (IndexerDeclarationSyntax)identifierToken.Parent, cancellationToken),
+                //            nameof(SA1600CodeFixProvider)),
+                //        diagnostic);
+                //    break;
                 }
             }
         }
 
-        private Task<Document> GetIndexerDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, IndexerDeclarationSyntax indexerDeclaration, CancellationToken cancellationToken)
+        private Task<Document> GetMethodDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SyntaxNode parent, ParameterSyntax parmaterSyntax, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
-        }
-
-        private Task<Document> GetDelegateDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, DelegateDeclarationSyntax delegateDeclaration, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        private Task<Document> GetMethodDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, BaseMethodDeclarationSyntax methodDeclaration, CancellationToken cancellationToken)
-        {
-            SyntaxTriviaList leadingTrivia = methodDeclaration.GetLeadingTrivia();
-            int insertionIndex = GetInsertionIndex(ref leadingTrivia);
-
             string newLineText = document.Project.Solution.Workspace.Options.GetOption(FormattingOptions.NewLine, LanguageNames.CSharp);
+            var documentation = parent.GetDocumentationCommentTriviaSyntax();
 
-            throw new NotImplementedException();
-        }
+            var paramNodesDocumentation = documentation.Content
+                .GetXmlElements(XmlCommentHelper.ParamXmlTag)
+                .ToList();
+            SeparatedSyntaxList<ParameterSyntax> parameters = ((ParameterListSyntax)parmaterSyntax.Parent).Parameters;
+            var parameterIndex = parameters.IndexOf(parmaterSyntax);
+            SyntaxNode prevNode = null;
 
-        private Task<Document> GetConstructorDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, BaseMethodDeclarationSyntax methodDeclaration, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        private static int GetInsertionIndex(ref SyntaxTriviaList leadingTrivia)
-        {
-            int insertionIndex = leadingTrivia.Count;
-            while (insertionIndex > 0 && !leadingTrivia[insertionIndex - 1].HasBuiltinEndLine())
+            if (parameterIndex != 0)
             {
-                insertionIndex--;
+                var count = 0;
+                foreach (XmlNodeSyntax paramXmlNode in paramNodesDocumentation)
+                {
+                    if (count > parameterIndex)
+                    {
+                        prevNode = paramXmlNode;
+                        break;
+                    }
+
+                    var name = XmlCommentHelper.GetFirstAttributeOrDefault<XmlNameAttributeSyntax>(paramXmlNode);
+                    if (name != null)
+                    {
+                        var nameValue = name.Identifier.Identifier.ValueText;
+                        if (parameters[count].Identifier.ValueText == nameValue)
+                        {
+                            count++;
+                            continue;
+                        }
+
+                        prevNode = paramXmlNode;
+                        break;
+                    }
+                }
             }
 
-            return insertionIndex;
+            if (prevNode == null)
+            {
+                prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.TypeParamXmlTag).LastOrDefault();
+            }
+
+            // no
+            if (prevNode == null)
+            {
+                prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.SummaryXmlTag).FirstOrDefault() ?? documentation.Content.First();
+            }
+
+            var parmeterDocumentation = GetParameterDocumentation(newLineText, parmaterSyntax);
+            var newDocumentation = documentation.InsertNodesAfter(prevNode, parmeterDocumentation);
+            var newTriva = SyntaxFactory.Trivia(newDocumentation);
+            var newElement = parent.ReplaceTrivia(documentation.ParentTrivia, newTriva);
+            return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(parent, newElement)));
+        }
+
+        private static IEnumerable<XmlNodeSyntax> GetParameterDocumentation(string newLineText, ParameterSyntax parameter)
+        {
+            yield return XmlSyntaxFactory.NewLine(newLineText);
+            var paramDocumentation = XmlSyntaxFactory.Text(CommentContentHelper.CreateParameterSummeryText(parameter));
+            yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
         }
     }
 }
