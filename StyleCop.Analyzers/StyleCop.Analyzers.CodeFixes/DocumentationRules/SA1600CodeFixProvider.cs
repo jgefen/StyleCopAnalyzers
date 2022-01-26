@@ -289,7 +289,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             var documentationNodes = new List<XmlNodeSyntax>();
             documentationNodes.Add(PropertyDocumentationHelper.CreateIndexerSummeryNode(indexerDeclaration, semanticModel, cancellationToken, newLineText));
-            documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(indexerDeclaration.ParameterList?.Parameters, newLineText));
+            documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(newLineText, indexerDeclaration.ParameterList?.Parameters.ToArray()));
             documentationNodes.AddRange(MethodDocumentationHelper.CreateReturnDocumentation(newLineText, XmlSyntaxFactory.Text(DocumentationResources.IndexerReturnDocumentation)));
 
             return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, indexerDeclaration, newLineText, documentationNodes.ToArray()));
@@ -353,7 +353,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText, standardTextSyntaxList));
 
-            var parametersDocumentation = MethodDocumentationHelper.CreateParametersDocumentation(declaration.ParameterList?.Parameters, newLineText);
+            var parametersDocumentation = MethodDocumentationHelper.CreateParametersDocumentation(newLineText, declaration.ParameterList?.Parameters.ToArray());
             documentationNodes.AddRange(parametersDocumentation);
 
             var documentationComment =
@@ -427,7 +427,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             documentationNodes.AddRange(MethodDocumentationHelper.CreateTypeParametersDocumentation(typeParameterList, newLineText));
 
-            documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(parameterList?.Parameters, newLineText));
+            documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(newLineText, parameterList?.Parameters.ToArray()));
 
             documentationNodes.AddRange(MethodDocumentationHelper.CreateReturnDocumentation(semanticModel, returnType, cancellationToken, newLineText));
 

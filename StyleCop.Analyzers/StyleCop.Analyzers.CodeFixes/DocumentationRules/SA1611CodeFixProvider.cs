@@ -108,12 +108,6 @@ namespace StyleCop.Analyzers.DocumentationRules
                 var count = 0;
                 foreach (XmlNodeSyntax paramXmlNode in paramNodesDocumentation)
                 {
-                    if (count > parameterIndex)
-                    {
-                        prevNode = paramXmlNode;
-                        break;
-                    }
-
                     var name = XmlCommentHelper.GetFirstAttributeOrDefault<XmlNameAttributeSyntax>(paramXmlNode);
                     if (name != null)
                     {
@@ -121,6 +115,12 @@ namespace StyleCop.Analyzers.DocumentationRules
                         if (parameters[count].Identifier.ValueText == nameValue)
                         {
                             count++;
+                            if (count == parameterIndex)
+                            {
+                                prevNode = paramXmlNode;
+                                break;
+                            }
+
                             continue;
                         }
 
@@ -141,18 +141,11 @@ namespace StyleCop.Analyzers.DocumentationRules
                 prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.SummaryXmlTag).FirstOrDefault() ?? documentation.Content.First();
             }
 
-            var parmeterDocumentation = GetParameterDocumentation(newLineText, parmaterSyntax);
+            var parmeterDocumentation = MethodDocumentationHelper.CreateParametersDocumentation(newLineText, parmaterSyntax);
             var newDocumentation = documentation.InsertNodesAfter(prevNode, parmeterDocumentation);
             var newTriva = SyntaxFactory.Trivia(newDocumentation);
             var newElement = parent.ReplaceTrivia(documentation.ParentTrivia, newTriva);
             return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(parent, newElement)));
-        }
-
-        private static IEnumerable<XmlNodeSyntax> GetParameterDocumentation(string newLineText, ParameterSyntax parameter)
-        {
-            yield return XmlSyntaxFactory.NewLine(newLineText);
-            var paramDocumentation = XmlSyntaxFactory.Text(CommentContentHelper.CreateParameterSummeryText(parameter));
-            yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
         }
     }
 }
