@@ -11,6 +11,18 @@ namespace StyleCop.Analyzers.Helpers
 
     internal static class CommonDocumentationHelper
     {
+        /// <summary>
+        /// Creates the summery node.
+        /// </summary>
+        /// <param name="summeryContent">Content of the summery.</param>
+        /// <param name="newLineText">The new line text.</param>
+        /// <returns>The summery node.</returns>
+        public static XmlNodeSyntax CreateSummeryNode(string summeryContent, string newLineText)
+        {
+            var summerySyntax = XmlSyntaxFactory.Text(summeryContent);
+            return XmlSyntaxFactory.SummaryElement(newLineText, summerySyntax);
+        }
+
         public static string SplitNameAndToLower(string name, bool isFirstCharacterLower, bool skipSingleCharIfFirst = false)
         {
             return string.Join(" ", NameSplitter.Split(name)
@@ -36,7 +48,7 @@ namespace StyleCop.Analyzers.Helpers
             return false;
         }
 
-        public static string CreateCommonComment(string name, bool skipSingleCharIfFirst = false)
+        public static XmlNode CreateCommonComment(string name, bool skipSingleCharIfFirst = false)
         {
             return "The " + GetNameDocumentation(name, skipSingleCharIfFirst: skipSingleCharIfFirst);
         }

@@ -15,7 +15,6 @@ namespace StyleCop.Analyzers.DocumentationRules
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Formatting;
-    using Microsoft.CodeAnalysis.Simplification;
     using StyleCop.Analyzers.Helpers;
 
     /// <summary>
@@ -71,7 +70,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
                 case SyntaxKind.MethodDeclaration:
                     MethodDeclarationSyntax methodDeclaration = (MethodDeclarationSyntax)identifierToken.Parent;
-                    if (!IsCoveredByInheritDoc(semanticModel, methodDeclaration, context.CancellationToken))
+                    if (!InheritDocHelper.IsCoveredByInheritDoc(semanticModel, methodDeclaration, context.CancellationToken))
                     {
                         context.RegisterCodeFix(
                             CodeAction.Create(
@@ -105,7 +104,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
                 case SyntaxKind.PropertyDeclaration:
                     var propertyDeclaration = (PropertyDeclarationSyntax)identifierToken.Parent;
-                    if (!IsCoveredByInheritDoc(semanticModel, propertyDeclaration, context.CancellationToken))
+                    if (!InheritDocHelper.IsCoveredByInheritDoc(semanticModel, propertyDeclaration, context.CancellationToken))
                     {
                         context.RegisterCodeFix(
                             CodeAction.Create(
@@ -246,7 +245,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             SyntaxNode root,
             EventDeclarationSyntax eventDeclaration)
         {
-            return GetEventDocumentationTransformedDocument(
+            return GetEventDocumentationTransformedDocumentAsync(
                 document,
                 root,
                 eventDeclaration,
@@ -258,14 +257,14 @@ namespace StyleCop.Analyzers.DocumentationRules
             SyntaxNode root,
             EventFieldDeclarationSyntax eventDeclaration)
         {
-            return GetEventDocumentationTransformedDocument(
+            return GetEventDocumentationTransformedDocumentAsync(
                 document,
                 root,
                 eventDeclaration,
                 eventDeclaration.Declaration.Variables.First().Identifier);
         }
 
-        private static Task<Document> GetEventDocumentationTransformedDocument(
+        private static Task<Document> GetEventDocumentationTransformedDocumentAsync(
             Document document,
             SyntaxNode root,
             SyntaxNode eventDeclaration,
@@ -274,7 +273,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             string newLineText = GetNewLineText(document);
 
             var documentationText = EventDocumentationHelper.CreateEventDocumentation(identifier);
-            var documentationNode = CreateSummeryNode(documentationText, newLineText);
+            var documentationNode = CommonDocumentationHelper.CreateSummeryNode(documentationText, newLineText);
 
             return Task.FromResult(
                 CreateCommentAndReplaceInDocument(document, root, eventDeclaration, newLineText, documentationNode));
@@ -290,11 +289,9 @@ namespace StyleCop.Analyzers.DocumentationRules
             string newLineText = GetNewLineText(document);
 
             var documentationNodes = new List<XmlNodeSyntax>();
-            var indexerSummeryText = PropertyDocumentationHelper.CreateIndexerSummeryComment(indexerDeclaration, semanticModel, cancellationToken);
-            documentationNodes.Add(CreateSummeryNode(indexerSummeryText, newLineText));
-            documentationNodes.AddRange(CreateParametersDocumentation(indexerDeclaration.ParameterList?.Parameters, newLineText));
-            documentationNodes.Add(XmlSyntaxFactory.NewLine(newLineText));
-            documentationNodes.Add(XmlSyntaxFactory.ReturnsElement(XmlSyntaxFactory.Text(DocumentationResources.IndexerReturnDocumentation)));
+            documentationNodes.Add(PropertyDocumentationHelper.CreateIndexerSummeryNode(indexerDeclaration, semanticModel, cancellationToken, newLineText));
+            documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(indexerDeclaration.ParameterList?.Parameters, newLineText));
+            documentationNodes.AddRange(MethodDocumentationHelper.CreateReturnDocumentation(newLineText, XmlSyntaxFactory.Text(DocumentationResources.IndexerReturnDocumentation)));
 
             return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, indexerDeclaration, newLineText, documentationNodes.ToArray()));
         }
@@ -303,14 +300,17 @@ namespace StyleCop.Analyzers.DocumentationRules
             Document document,
             SyntaxNode root,
             SyntaxNode declaration,
-            SyntaxToken declarationIdentifier)
+            SyntaxToken declarationIdentifier,
+            params XmlNodeSyntax[] additionalDocumentation)
         {
             string newLineText = GetNewLineText(document);
 
+            var documentationNods = new List<XmlNodeSyntax>();
             var documentationText = CommonDocumentationHelper.CreateCommonComment(declarationIdentifier.ValueText, declaration.Kind() == SyntaxKind.InterfaceDeclaration);
-            var documentationNode = CreateSummeryNode(documentationText, newLineText);
+            documentationNods.Add(CommonDocumentationHelper.CreateSummeryNode(documentationText, newLineText));
+            documentationNods.AddRange(additionalDocumentation);
 
-            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNode));
+            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNods.ToArray()));
         }
 
         private static Task<Document> GetCommonGenericTypeDocumentationTransformedDocumentAsync(
@@ -319,14 +319,8 @@ namespace StyleCop.Analyzers.DocumentationRules
             TypeDeclarationSyntax declaration,
             SyntaxToken declarationIdentifier)
         {
-            string newLineText = GetNewLineText(document);
-
-            var documentationList = new List<XmlNodeSyntax>();
-            var documentationText = CommonDocumentationHelper.CreateCommonComment(declarationIdentifier.ValueText, declaration.Kind() == SyntaxKind.InterfaceDeclaration);
-            documentationList.Add(CreateSummeryNode(documentationText, newLineText));
-            documentationList.AddRange(CreateTypeParametersDocumentation(declaration.TypeParameterList, newLineText));
-
-            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationList.ToArray()));
+            var typeParamsDocumentation = MethodDocumentationHelper.CreateTypeParametersDocumentation(declaration.TypeParameterList, GetNewLineText(document)).ToArray();
+            return GetCommonTypeDocumentationTransformedDocumentAsync(document, root, declaration, declarationIdentifier, typeParamsDocumentation);
         }
 
         private static Task<Document> GetPropertyDocumentationTransformedDocumentAsync(
@@ -338,60 +332,8 @@ namespace StyleCop.Analyzers.DocumentationRules
         {
             string newLineText = GetNewLineText(document);
 
-            var propertyDocumentationText = PropertyDocumentationHelper.CreatePropertySummeryComment(propertyDeclaration, semanticModel, cancellationToken);
-            var propertyDocumentationNode = CreateSummeryNode(propertyDocumentationText, newLineText);
-
+            var propertyDocumentationNode = PropertyDocumentationHelper.CreatePropertySummeryComment(propertyDeclaration, semanticModel, cancellationToken, newLineText);
             return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, propertyDeclaration, newLineText, propertyDocumentationNode));
-        }
-
-        private static Document CreateCommentAndReplaceInDocument(
-            Document document,
-            SyntaxNode root,
-            SyntaxNode declarationNode,
-            string newLineText,
-            params XmlNodeSyntax[] documentationNodes)
-        {
-            var leadingTrivia = declarationNode.GetLeadingTrivia();
-            int insertionIndex = GetInsertionIndex(ref leadingTrivia);
-
-            var documentationComment = XmlSyntaxFactory.DocumentationComment(newLineText, documentationNodes);
-            var trivia = SyntaxFactory.Trivia(documentationComment);
-
-            SyntaxTriviaList newLeadingTrivia = leadingTrivia.Insert(insertionIndex, trivia);
-            SyntaxNode newElement = declarationNode.WithLeadingTrivia(newLeadingTrivia);
-            return document.WithSyntaxRoot(root.ReplaceNode(declarationNode, newElement));
-        }
-
-        private static bool IsCoveredByInheritDoc(SemanticModel semanticModel, MethodDeclarationSyntax methodDeclaration, CancellationToken cancellationToken)
-        {
-            if (methodDeclaration.ExplicitInterfaceSpecifier != null)
-            {
-                return true;
-            }
-
-            if (methodDeclaration.Modifiers.Any(SyntaxKind.OverrideKeyword))
-            {
-                return true;
-            }
-
-            ISymbol declaredSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, cancellationToken);
-            return (declaredSymbol != null) && NamedTypeHelpers.IsImplementingAnInterfaceMember(declaredSymbol);
-        }
-
-        private static bool IsCoveredByInheritDoc(SemanticModel semanticModel, PropertyDeclarationSyntax propertyDeclaration, CancellationToken cancellationToken)
-        {
-            if (propertyDeclaration.ExplicitInterfaceSpecifier != null)
-            {
-                return true;
-            }
-
-            if (propertyDeclaration.Modifiers.Any(SyntaxKind.OverrideKeyword))
-            {
-                return true;
-            }
-
-            ISymbol declaredSymbol = semanticModel.GetDeclaredSymbol(propertyDeclaration, cancellationToken);
-            return (declaredSymbol != null) && NamedTypeHelpers.IsImplementingAnInterfaceMember(declaredSymbol);
         }
 
         private static Task<Document> GetConstructorOrDestructorDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, BaseMethodDeclarationSyntax declaration, CancellationToken cancellationToken)
@@ -412,7 +354,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             documentationNodes.Add(XmlSyntaxFactory.SummaryElement(newLineText, standardTextSyntaxList));
 
-            var parametersDocumentation = CreateParametersDocumentation(declaration.ParameterList?.Parameters, newLineText);
+            var parametersDocumentation = MethodDocumentationHelper.CreateParametersDocumentation(declaration.ParameterList?.Parameters, newLineText);
             documentationNodes.AddRange(parametersDocumentation);
 
             var documentationComment =
@@ -482,83 +424,35 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             var documentationNodes = new List<XmlNodeSyntax>();
 
-            var summeryContent = MethodDocumentationHelper.CreateMethodSummeryText(identifier.ValueText);
-            documentationNodes.Add(CreateSummeryNode(summeryContent, newLineText));
+            documentationNodes.Add(MethodDocumentationHelper.CreateMethodSummeryText(identifier.ValueText, newLineText));
 
-            documentationNodes.AddRange(CreateTypeParametersDocumentation(typeParameterList, newLineText));
+            documentationNodes.AddRange(MethodDocumentationHelper.CreateTypeParametersDocumentation(typeParameterList, newLineText));
 
-            documentationNodes.AddRange(CreateParametersDocumentation(parameterList?.Parameters, newLineText));
+            documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(parameterList?.Parameters, newLineText));
 
-            documentationNodes.AddRange(CreateReturnDocumentation(semanticModel, returnType, cancellationToken, newLineText));
+            documentationNodes.AddRange(MethodDocumentationHelper.CreateReturnDocumentation(semanticModel, returnType, cancellationToken, newLineText));
 
             documentationNodes.AddRange(additionalDocumentation);
 
             return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNodes.ToArray()));
         }
 
-        private static XmlNodeSyntax CreateSummeryNode(string summeryContent, string newLineText)
+        private static Document CreateCommentAndReplaceInDocument(
+            Document document,
+            SyntaxNode root,
+            SyntaxNode declarationNode,
+            string newLineText,
+            params XmlNodeSyntax[] documentationNodes)
         {
-            var summerySyntax = XmlSyntaxFactory.Text(summeryContent);
-            return XmlSyntaxFactory.SummaryElement(newLineText, summerySyntax);
-        }
+            var leadingTrivia = declarationNode.GetLeadingTrivia();
+            int insertionIndex = GetInsertionIndex(ref leadingTrivia);
 
-        private static IEnumerable<XmlNodeSyntax> CreateReturnDocumentation(
-            SemanticModel semanticModel,
-            TypeSyntax returnType,
-            CancellationToken cancellationToken,
-            string newLineText)
-        {
-            if (semanticModel.GetSymbolInfo(returnType, cancellationToken).Symbol is not ITypeSymbol typeSymbol)
-            {
-                yield break;
-            }
+            var documentationComment = XmlSyntaxFactory.DocumentationComment(newLineText, documentationNodes);
+            var trivia = SyntaxFactory.Trivia(documentationComment);
 
-            if (TaskHelper.IsTaskReturningType(semanticModel, returnType, cancellationToken))
-            {
-                TypeSyntax typeName;
-
-                if (((INamedTypeSymbol)typeSymbol).IsGenericType)
-                {
-                    typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task<TResult>");
-                }
-                else
-                {
-                    typeName = SyntaxFactory.ParseTypeName("global::System.Threading.Tasks.Task");
-                }
-
-                XmlNodeSyntax[] returnContent =
-                {
-                    XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementFirstPart),
-                    XmlSyntaxFactory.SeeElement(SyntaxFactory.TypeCref(typeName)).WithAdditionalAnnotations(Simplifier.Annotation),
-                    XmlSyntaxFactory.Text(DocumentationResources.TaskReturnElementSecondPart),
-                };
-
-                yield return XmlSyntaxFactory.NewLine(newLineText);
-                yield return XmlSyntaxFactory.ReturnsElement(returnContent);
-            }
-            else if (typeSymbol.SpecialType != SpecialType.System_Void)
-            {
-                yield return XmlSyntaxFactory.NewLine(newLineText);
-                var returnDocumentationContent = MethodDocumentationHelper.CreateReturnElementSyntax(returnType);
-                yield return XmlSyntaxFactory.ReturnsElement(returnDocumentationContent);
-            }
-        }
-
-        private static IEnumerable<XmlNodeSyntax> CreateTypeParametersDocumentation(
-            TypeParameterListSyntax typeParametersList,
-            string newLineText)
-        {
-            if (typeParametersList == null)
-            {
-                yield break;
-            }
-
-            foreach (var typeParameter in typeParametersList.Parameters)
-            {
-                yield return XmlSyntaxFactory.NewLine(newLineText);
-                var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateTypeParameterComment(typeParameter));
-                yield return XmlSyntaxFactory.TypeParamElement(typeParameter.Identifier.ValueText, paramDocumentation);
-            }
+            SyntaxTriviaList newLeadingTrivia = leadingTrivia.Insert(insertionIndex, trivia);
+            SyntaxNode newElement = declarationNode.WithLeadingTrivia(newLeadingTrivia);
+            return document.WithSyntaxRoot(root.ReplaceNode(declarationNode, newElement));
         }
 
         private static int GetInsertionIndex(ref SyntaxTriviaList leadingTrivia)
@@ -570,21 +464,6 @@ namespace StyleCop.Analyzers.DocumentationRules
             }
 
             return insertionIndex;
-        }
-
-        private static IEnumerable<XmlNodeSyntax> CreateParametersDocumentation(IEnumerable<ParameterSyntax> parametersList, string newLineText)
-        {
-            if (parametersList == null)
-            {
-                yield break;
-            }
-
-            foreach (var parameter in parametersList)
-            {
-                yield return XmlSyntaxFactory.NewLine(newLineText);
-                var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateParameterSummeryText(parameter));
-                yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
-            }
         }
 
         private static string GetNewLineText(Document document)

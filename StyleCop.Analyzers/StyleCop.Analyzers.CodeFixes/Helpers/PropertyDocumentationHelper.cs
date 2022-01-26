@@ -10,24 +10,42 @@ namespace StyleCop.Analyzers.Helpers
 
     internal static class PropertyDocumentationHelper
     {
-        public static string CreateIndexerSummeryComment(
+        /// <summary>
+        /// Creates the indexer summery comment.
+        /// </summary>
+        /// <param name="indexerDeclarationSyntax">The indexer declaration syntax.</param>
+        /// <param name="semanticModel">The semantic model.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="newLineText">The new line text.</param>
+        /// <returns>The indexer summery comment text.</returns>
+        public static XmlNodeSyntax CreateIndexerSummeryNode(
             IndexerDeclarationSyntax indexerDeclarationSyntax,
             SemanticModel semanticModel,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string newLineText)
         {
             var propertyData = PropertyAnalyzerHelper.AnalyzeIndexerAccessors(indexerDeclarationSyntax, semanticModel, cancellationToken);
-            string comment = GetPropertyGetsOrSetsPrefix(propertyData);
-            return comment + " the element at the specified index.";
+            string comment = GetPropertyGetsOrSetsPrefix(ref propertyData);
+            return CommonDocumentationHelper.CreateSummeryNode(comment + " the element at the specified index.", newLineText);
         }
 
-        public static string CreatePropertySummeryComment(
+        /// <summary>
+        /// Creates the property summery comment.
+        /// </summary>
+        /// <param name="propertyDeclaration">The property declaration.</param>
+        /// <param name="semanticModel">The semantic model.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="newLineText">The new line text.</param>
+        /// <returns>Create property summery comment.</returns>
+        public static XmlNodeSyntax CreatePropertySummeryComment(
             PropertyDeclarationSyntax propertyDeclaration,
             SemanticModel semanticModel,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string newLineText)
         {
             var propertyName = propertyDeclaration.Identifier.ValueText;
             var propertyData = PropertyAnalyzerHelper.AnalyzePropertyAccessors(propertyDeclaration, semanticModel, cancellationToken);
-            string comment = GetPropertyGetsOrSetsPrefix(propertyData);
+            string comment = GetPropertyGetsOrSetsPrefix(ref propertyData);
 
             if (CommonDocumentationHelper.IsBooleanParameter(propertyDeclaration.Type))
             {
@@ -38,19 +56,14 @@ namespace StyleCop.Analyzers.Helpers
                 comment += " the " + CommonDocumentationHelper.SplitNameAndToLower(propertyName, true);
             }
 
-            return comment + ".";
+            return CommonDocumentationHelper.CreateSummeryNode(comment + ".", newLineText);
         }
 
         private static string GetPropertyGetsOrSetsPrefix(
-            PropertyAnalyzerHelper.PropertyData propertyData)
+            ref PropertyAnalyzerHelper.PropertyData propertyData)
         {
-            string comment = "Gets";
-            if (propertyData.SetterVisible)
-            {
-                comment += " or sets";
-            }
-
-            return comment;
+            var getsPrefix = "Gets";
+            return propertyData.SetterVisible ? getsPrefix + " or sets" : getsPrefix;
         }
 
         private static string CreatePropertyBooleanPart(string name)
