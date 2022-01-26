@@ -137,17 +137,17 @@ namespace StyleCop.Analyzers.Helpers
         /// <summary>
         /// Creates the parameters documentation.
         /// </summary>
-        /// <param name="parametersList">The parameters list.</param>
         /// <param name="newLineText">The new line text.</param>
+        /// /// <param name="parameters">The parameters list.</param>
         /// <returns>The list of xml node syntax for the parameters documentation.</returns>
-        public static IEnumerable<XmlNodeSyntax> CreateParametersDocumentation(IEnumerable<ParameterSyntax> parametersList, string newLineText)
+        public static IEnumerable<XmlNodeSyntax> CreateParametersDocumentation(string newLineText, params ParameterSyntax[] parameters)
         {
-            if (parametersList == null)
+            if (parameters == null)
             {
                 yield break;
             }
 
-            foreach (var parameter in parametersList)
+            foreach (var parameter in parameters)
             {
                 yield return XmlSyntaxFactory.NewLine(newLineText);
                 var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateParameterSummeryText(parameter));
