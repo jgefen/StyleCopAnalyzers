@@ -119,11 +119,21 @@ namespace StyleCop.Analyzers.DocumentationRules
                 prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.SummaryXmlTag).FirstOrDefault() ?? documentation.Content.First();
             }
 
-            var parmeterDocumentation = MethodDocumentationHelper.CreateParametersDocumentation(newLineText, parmaterSyntax);
+            XmlNodeSyntax leadingNewLine = XmlSyntaxFactory.NewLine(newLineText);
+
+            // HACK: The formatter isn't working when contents are added to an existing documentation comment, so we
+            // manually apply the indentation from the last line of the existing comment to each new line of the
+            // generated content.
+            SyntaxTrivia exteriorTrivia = CommonDocumentationHelper.GetLastDocumentationCommentExteriorTrivia(documentation);
+            if (!exteriorTrivia.Token.IsMissing)
+            {
+                leadingNewLine = leadingNewLine.ReplaceExteriorTrivia(exteriorTrivia);
+            }
+
+            var parmeterDocumentation = MethodDocumentationHelper.CreateParametersDocumentationWithLeadingLine(leadingNewLine, parmaterSyntax);
             var newDocumentation = documentation.InsertNodesAfter(prevNode, parmeterDocumentation);
-            var newTriva = SyntaxFactory.Trivia(newDocumentation);
-            var newElement = parent.ReplaceTrivia(documentation.ParentTrivia, newTriva);
-            return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(parent, newElement)));
+
+            return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(documentation, newDocumentation)));
         }
 
         private static IEnumerable<ParameterSyntax> GetParentDeclerationParameters(ParameterSyntax parmaterSyntax)

@@ -155,6 +155,27 @@ namespace StyleCop.Analyzers.Helpers
             }
         }
 
+        /// <summary>
+        /// Creates the parameters documentation.
+        /// </summary>
+        /// <param name="leadingNewLine">The new line syntax node.</param>
+        /// /// <param name="parameters">The parameters list.</param>
+        /// <returns>The list of xml node syntax for the parameters documentation.</returns>
+        public static IEnumerable<XmlNodeSyntax> CreateParametersDocumentationWithLeadingLine(XmlNodeSyntax leadingNewLine, params ParameterSyntax[] parameters)
+        {
+            if (parameters == null)
+            {
+                yield break;
+            }
+
+            foreach (var parameter in parameters)
+            {
+                yield return leadingNewLine;
+                var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateParameterSummeryText(parameter));
+                yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
+            }
+        }
+
         private static string GetReturnDocumentationText(TypeSyntax returnType)
         {
             return returnType switch

@@ -57,5 +57,12 @@ namespace StyleCop.Analyzers.Helpers
         {
             return $"{SplitNameAndToLower(name, isFirstCharacterLower, skipSingleCharIfFirst)}.";
         }
+
+        public static SyntaxTrivia GetLastDocumentationCommentExteriorTrivia(SyntaxNode node)
+        {
+            return node
+                .DescendantTrivia(descendIntoTrivia: true)
+                .LastOrDefault(trivia => trivia.IsKind(SyntaxKind.DocumentationCommentExteriorTrivia));
+        }
     }
 }
