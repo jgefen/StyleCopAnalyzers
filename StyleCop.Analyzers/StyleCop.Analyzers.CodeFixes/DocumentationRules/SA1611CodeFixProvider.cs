@@ -83,37 +83,16 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             if (parameterIndex != 0)
             {
-                var count = 0;
-                foreach (XmlNodeSyntax paramXmlNode in paramNodesDocumentation)
-                {
-                    var name = XmlCommentHelper.GetFirstAttributeOrDefault<XmlNameAttributeSyntax>(paramXmlNode);
-                    if (name != null)
-                    {
-                        var nameValue = name.Identifier.Identifier.ValueText;
-                        if (parameters[count].Identifier.ValueText == nameValue)
-                        {
-                            count++;
-                            if (count == parameterIndex)
-                            {
-                                prevNode = paramXmlNode;
-                                break;
-                            }
-
-                            continue;
-                        }
-
-                        prevNode = paramXmlNode;
-                        break;
-                    }
-                }
+                prevNode = GetPrevParamTagNodeIfExist(paramNodesDocumentation, parameters, parameterIndex, prevNode);
             }
 
+            // no prev Param tage so fall back to TypParam Tag
             if (prevNode == null)
             {
                 prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.TypeParamXmlTag).LastOrDefault();
             }
 
-            // no
+            // last fallback Summery or first in existing XML doc
             if (prevNode == null)
             {
                 prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.SummaryXmlTag).FirstOrDefault() ?? documentation.Content.First();
@@ -134,6 +113,35 @@ namespace StyleCop.Analyzers.DocumentationRules
             var newDocumentation = documentation.InsertNodesAfter(prevNode, parmeterDocumentation);
 
             return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(documentation, newDocumentation)));
+        }
+
+        private static SyntaxNode GetPrevParamTagNodeIfExist(List<XmlNodeSyntax> paramNodesDocumentation, IList<ParameterSyntax> parameters, int parameterIndex, SyntaxNode prevNode)
+        {
+            var existingParameterDocCount = 0;
+            foreach (XmlNodeSyntax paramXmlNode in paramNodesDocumentation)
+            {
+                var name = XmlCommentHelper.GetFirstAttributeOrDefault<XmlNameAttributeSyntax>(paramXmlNode);
+                if (name != null)
+                {
+                    var nameValue = name.Identifier.Identifier.ValueText;
+                    if (parameters[existingParameterDocCount].Identifier.ValueText == nameValue)
+                    {
+                        existingParameterDocCount++;
+                        if (existingParameterDocCount == parameterIndex)
+                        {
+                            prevNode = paramXmlNode;
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    prevNode = paramXmlNode;
+                    break;
+                }
+            }
+
+            return prevNode;
         }
 
         private static IEnumerable<ParameterSyntax> GetParentDeclerationParameters(ParameterSyntax parmaterSyntax)
