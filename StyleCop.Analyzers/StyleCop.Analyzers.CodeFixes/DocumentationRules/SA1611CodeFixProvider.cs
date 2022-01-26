@@ -34,7 +34,8 @@ namespace StyleCop.Analyzers.DocumentationRules
             return CustomFixAllProviders.BatchFixer;
         }
 
-        public async override Task RegisterCodeFixesAsync(CodeFixContext context)
+        /// <inheritdoc/>
+        public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             SyntaxNode root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
             SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
@@ -53,45 +54,22 @@ namespace StyleCop.Analyzers.DocumentationRules
                 var parentDeclaration = parmaterSyntax.Parent.Parent;
                 switch (parentDeclaration.Kind())
                 {
-                //case SyntaxKind.ConstructorDeclaration:
-                //    context.RegisterCodeFix(
-                //        CodeAction.Create(
-                //            DocumentationResources.ConstructorDocumentationCodeFix,
-                //            cancellationToken => GetConstructorDocumentationTransformedDocumentAsync(context.Document, root, (BaseMethodDeclarationSyntax)identifierToken.Parent, cancellationToken),
-                //            nameof(SA1600CodeFixProvider)),
-                //        diagnostic);
-                //    break;
-
+                case SyntaxKind.ConstructorDeclaration:
                 case SyntaxKind.MethodDeclaration:
+                case SyntaxKind.DelegateDeclaration:
+                case SyntaxKind.IndexerDeclaration:
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            DocumentationResources.MethodDocumentationCodeFix,
-                            cancellationToken => GetMethodDocumentationTransformedDocumentAsync(context.Document, root, parentDeclaration, parmaterSyntax, cancellationToken),
+                            DocumentationResources.ParameterDocumentationCodeFix,
+                            cancellationToken => GetParmeterDocumentationTransformedDocumentAsync(context.Document, root, parentDeclaration, parmaterSyntax, cancellationToken),
                             nameof(SA1600CodeFixProvider)),
                         diagnostic);
                     break;
-
-                //case SyntaxKind.DelegateDeclaration:
-                //    context.RegisterCodeFix(
-                //        CodeAction.Create(
-                //            DocumentationResources.DelegateDocumentationCodeFix,
-                //            cancellationToken => GetDelegateDocumentationTransformedDocumentAsync(context.Document, root, (DelegateDeclarationSyntax)identifierToken.Parent, cancellationToken),
-                //            nameof(SA1600CodeFixProvider)),
-                //        diagnostic);
-                //    break;
-                //case SyntaxKind.IndexerDeclaration:
-                //    context.RegisterCodeFix(
-                //        CodeAction.Create(
-                //            DocumentationResources.IndexerDocumentationCodeFix,
-                //            cancellationToken => GetIndexerDocumentationTransformedDocumentAsync(context.Document, root, (IndexerDeclarationSyntax)identifierToken.Parent, cancellationToken),
-                //            nameof(SA1600CodeFixProvider)),
-                //        diagnostic);
-                //    break;
                 }
             }
         }
 
-        private Task<Document> GetMethodDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SyntaxNode parent, ParameterSyntax parmaterSyntax, CancellationToken cancellationToken)
+        private static Task<Document> GetParmeterDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, SyntaxNode parent, ParameterSyntax parmaterSyntax, CancellationToken cancellationToken)
         {
             string newLineText = document.Project.Solution.Workspace.Options.GetOption(FormattingOptions.NewLine, LanguageNames.CSharp);
             var documentation = parent.GetDocumentationCommentTriviaSyntax();
@@ -99,7 +77,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             var paramNodesDocumentation = documentation.Content
                 .GetXmlElements(XmlCommentHelper.ParamXmlTag)
                 .ToList();
-            SeparatedSyntaxList<ParameterSyntax> parameters = ((ParameterListSyntax)parmaterSyntax.Parent).Parameters;
+            IList<ParameterSyntax> parameters = GetParentDeclerationParameters(parmaterSyntax).ToList();
             var parameterIndex = parameters.IndexOf(parmaterSyntax);
             SyntaxNode prevNode = null;
 
@@ -146,6 +124,12 @@ namespace StyleCop.Analyzers.DocumentationRules
             var newTriva = SyntaxFactory.Trivia(newDocumentation);
             var newElement = parent.ReplaceTrivia(documentation.ParentTrivia, newTriva);
             return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(parent, newElement)));
+        }
+
+        private static IEnumerable<ParameterSyntax> GetParentDeclerationParameters(ParameterSyntax parmaterSyntax)
+        {
+            return (parmaterSyntax.Parent as ParameterListSyntax)?.Parameters
+                ?? (parmaterSyntax.Parent as BracketedParameterListSyntax)?.Parameters;
         }
     }
 }

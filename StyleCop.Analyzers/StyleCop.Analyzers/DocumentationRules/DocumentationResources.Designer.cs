@@ -215,6 +215,15 @@ namespace StyleCop.Analyzers.DocumentationRules {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Generate parameter documentation.
+        /// </summary>
+        internal static string ParameterDocumentationCodeFix {
+            get {
+                return ResourceManager.GetString("ParameterDocumentationCodeFix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The parameter is not used..
         /// </summary>
         internal static string ParameterNotUsed {
