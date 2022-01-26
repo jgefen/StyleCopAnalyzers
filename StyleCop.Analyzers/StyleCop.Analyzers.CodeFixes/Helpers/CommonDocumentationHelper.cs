@@ -3,7 +3,6 @@
 
 namespace StyleCop.Analyzers.Helpers
 {
-    using System.Collections.Generic;
     using System.Linq;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -12,12 +11,11 @@ namespace StyleCop.Analyzers.Helpers
 
     internal static class CommonDocumentationHelper
     {
-        public static List<string> SplitNameAndToLower(string name, bool isFirstCharacterLower, bool skipSingleCharIfFirst = false)
+        public static string SplitNameAndToLower(string name, bool isFirstCharacterLower, bool skipSingleCharIfFirst = false)
         {
-            return NameSplitter.Split(name)
+            return string.Join(" ", NameSplitter.Split(name)
                 .Select((n, i) => !isFirstCharacterLower && i == 0 ? n : n.ToLower())
-                .SkipWhile((n, i) => skipSingleCharIfFirst && i == 0 && n.Length == 1)
-                .ToList();
+                .SkipWhile((n, i) => skipSingleCharIfFirst && i == 0 && n.Length == 1));
         }
 
         public static bool IsBooleanParameter(TypeSyntax type)
@@ -40,7 +38,12 @@ namespace StyleCop.Analyzers.Helpers
 
         public static string CreateCommonComment(string name, bool skipSingleCharIfFirst = false)
         {
-            return $"The {string.Join(" ", SplitNameAndToLower(name, true, skipSingleCharIfFirst))}.";
+            return "The " + GetNameDocumentation(name, skipSingleCharIfFirst: skipSingleCharIfFirst);
+        }
+
+        public static string GetNameDocumentation(string name, bool isFirstCharacterLower = true, bool skipSingleCharIfFirst = false)
+        {
+            return $"{SplitNameAndToLower(name, isFirstCharacterLower, skipSingleCharIfFirst)}.";
         }
     }
 }

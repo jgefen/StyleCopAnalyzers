@@ -3,7 +3,7 @@
 
 namespace StyleCop.Analyzers.Helpers
 {
-    using System.Linq;
+    using System;
     using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -28,7 +28,7 @@ namespace StyleCop.Analyzers.Helpers
             }
             else
             {
-                comment += " the " + string.Join(" ", CommonDocumentationHelper.SplitNameAndToLower(propertyName, true));
+                comment += " the " + CommonDocumentationHelper.SplitNameAndToLower(propertyName, true);
             }
 
             return comment + ".";
@@ -38,17 +38,15 @@ namespace StyleCop.Analyzers.Helpers
         {
             string booleanPart = " a value indicating whether ";
 
-            var parts = CommonDocumentationHelper.SplitNameAndToLower(name, true).ToList();
+            var nameDocumentation = CommonDocumentationHelper.SplitNameAndToLower(name, true);
 
-            string isWord = parts.FirstOrDefault(o => o == "is");
-            if (isWord != null)
+            var isWord = nameDocumentation.IndexOf("is", StringComparison.OrdinalIgnoreCase);
+            if (isWord != -1)
             {
-                parts.Remove(isWord);
-                parts.Insert(parts.Count - 1, isWord);
+                nameDocumentation = nameDocumentation.Remove(isWord, 2) + " is";
             }
 
-            booleanPart += string.Join(" ", parts);
-            return booleanPart;
+            return booleanPart + nameDocumentation;
         }
     }
 }

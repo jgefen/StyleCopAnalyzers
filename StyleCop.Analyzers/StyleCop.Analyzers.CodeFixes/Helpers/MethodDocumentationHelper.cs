@@ -4,6 +4,9 @@
 namespace StyleCop.Analyzers.Helpers
 {
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
 
     internal static class MethodDocumentationHelper
@@ -15,7 +18,7 @@ namespace StyleCop.Analyzers.Helpers
         /// <returns>The method comment.</returns>
         public static string CreateMethodSummeryText(string name)
         {
-            return string.Join(" ", CommonDocumentationHelper.SplitNameAndToLower(name, false)) + ".";
+            return CommonDocumentationHelper.GetNameDocumentation(name, false);
         }
 
         /// <summary>
@@ -27,7 +30,7 @@ namespace StyleCop.Analyzers.Helpers
         {
             if (CommonDocumentationHelper.IsBooleanParameter(parameter.Type))
             {
-                return "If true, " + string.Join(" ", CommonDocumentationHelper.SplitNameAndToLower(parameter.Identifier.ValueText, true)) + ".";
+                return "If true, " + CommonDocumentationHelper.GetNameDocumentation(parameter.Identifier.ValueText);
             }
             else
             {
@@ -44,7 +47,7 @@ namespace StyleCop.Analyzers.Helpers
         {
             // TODO: check where type.
             var typeParamName = CommonDocumentationHelper.SplitNameAndToLower(parameter.Identifier.Text, true, true);
-            return $"The {string.Join(" ", typeParamName)} parameter type.";
+            return $"The {typeParamName} parameter type.";
         }
 
         /// <summary>
@@ -119,25 +122,15 @@ namespace StyleCop.Analyzers.Helpers
 
         private static string DetermineSpecificObjectName(TypeSyntax specificType)
         {
-            string result = null;
-            if (specificType is IdentifierNameSyntax)
+            var objectName = specificType switch
             {
-                // result = Pluralizer.Pluralize(((IdentifierNameSyntax)specificType).Identifier.ValueText);
-            }
-            else if (specificType is PredefinedTypeSyntax predefinedTypeSyntax)
-            {
-                result = predefinedTypeSyntax.Keyword.ValueText;
-            }
-            else if (specificType is GenericNameSyntax genericNameSyntax)
-            {
-                result = genericNameSyntax.Identifier.ValueText;
-            }
-            else
-            {
-                result = specificType.ToFullString();
-            }
+                IdentifierNameSyntax identifierNameSyntax => identifierNameSyntax.Identifier.ValueText, // TODO: Pluralizer.Pluralize
+                PredefinedTypeSyntax predefinedTypeSyntax => predefinedTypeSyntax.Keyword.ValueText,
+                GenericNameSyntax genericNameSyntax => genericNameSyntax.Identifier.ValueText,
+                _ => specificType.ToFullString(),
+            };
 
-            return result + ".";
+            return objectName + ".";
         }
 
         private static string DetermineStartedWord(string returnType)

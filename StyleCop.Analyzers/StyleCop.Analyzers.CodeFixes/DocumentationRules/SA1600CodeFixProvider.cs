@@ -123,10 +123,10 @@ namespace StyleCop.Analyzers.DocumentationRules
                     break;
 
                 case SyntaxKind.ClassDeclaration:
-                case SyntaxKind.StructDeclaration:
                 case SyntaxKind.InterfaceDeclaration:
+                case SyntaxKind.StructDeclaration:
+                // TODO: add check inheritance?
                 case SyntaxKind.EnumDeclaration:
-                    // TODO: should check inheritance?
                     context.RegisterCodeFix(
                         CodeAction.Create(
                             DocumentationResources.MethodDocumentationCodeFix,
@@ -161,10 +161,9 @@ namespace StyleCop.Analyzers.DocumentationRules
                     break;
 
                     // TODO: should add the following cases:
-                    // SyntaxKind.IndexerDeclaration
-                    // SyntaxKind.EventDeclaration
-                    // SyntaxKind.EventDeclaration
-                    // SyntaxKind.EventFieldDeclaration
+                    // case SyntaxKind.IndexerDeclaration - method with getter setter
+                    // case SyntaxKind.EventDeclaration
+                    // case SyntaxKind.EventFieldDeclaration
                 }
             }
         }
