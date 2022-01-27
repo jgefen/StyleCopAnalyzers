@@ -17,7 +17,7 @@ namespace StyleCop.Analyzers.Helpers
         /// <returns>The event documentation node.</returns>
         public static XmlNodeSyntax CreateEventDocumentation(SyntaxToken identifier, string newLineText)
         {
-            return CommonDocumentationHelper.CreateSummeryNode(
+            return CommonDocumentationHelper.CreateSummaryNode(
                 DocumentationResources.EventDocumentationPrefix + CommonDocumentationHelper.GetNameDocumentation(identifier.ValueText),
                 newLineText);
         }

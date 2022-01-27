@@ -738,4 +738,7 @@
   <data name="TypeParameterDocumentationCodeFix" xml:space="preserve">
     <value>Generate type parameter documentation</value>
   </data>
+  <data name="EnumMemberDocumentationCodeFix" xml:space="preserve">
+    <value>Generate enum member documentation</value>
+  </data>
 </root>

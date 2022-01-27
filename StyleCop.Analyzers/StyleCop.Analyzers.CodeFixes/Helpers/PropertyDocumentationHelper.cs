@@ -26,7 +26,7 @@ namespace StyleCop.Analyzers.Helpers
         {
             var propertyData = PropertyAnalyzerHelper.AnalyzeIndexerAccessors(indexerDeclarationSyntax, semanticModel, cancellationToken);
             string comment = GetPropertyGetsOrSetsPrefix(ref propertyData);
-            return CommonDocumentationHelper.CreateSummeryNode(comment + " the element at the specified index.", newLineText);
+            return CommonDocumentationHelper.CreateSummaryNode(comment + " the element at the specified index.", newLineText);
         }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace StyleCop.Analyzers.Helpers
                 comment += " the " + CommonDocumentationHelper.SplitNameAndToLower(propertyName, true);
             }
 
-            return CommonDocumentationHelper.CreateSummeryNode(comment + ".", newLineText);
+            return CommonDocumentationHelper.CreateSummaryNode(comment + ".", newLineText);
         }
 
         private static string GetPropertyGetsOrSetsPrefix(

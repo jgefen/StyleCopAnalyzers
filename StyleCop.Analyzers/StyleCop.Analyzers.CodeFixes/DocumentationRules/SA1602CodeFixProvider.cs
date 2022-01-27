@@ -22,6 +22,7 @@ namespace StyleCop.Analyzers.DocumentationRules
     [Shared]
     internal class SA1602CodeFixProvider : CodeFixProvider
     {
+        /// <inheritdoc/>
         public override ImmutableArray<string> FixableDiagnosticIds { get; } =
             ImmutableArray.Create(
                 SA1602EnumerationItemsMustBeDocumented.DiagnosticId);
@@ -32,6 +33,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             return CustomFixAllProviders.BatchFixer;
         }
 
+        /// <inheritdoc/>
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var document = context.Document;
@@ -49,7 +51,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
                 context.RegisterCodeFix(
                     CodeAction.Create(
-                        DocumentationResources.EnumDocumentationCodeFix,
+                        DocumentationResources.EnumMemberDocumentationCodeFix,
                         cancellationToken => GetEnumDocumentationTransformedDocumentAsync(
                             context.Document,
                             root,
@@ -64,25 +66,42 @@ namespace StyleCop.Analyzers.DocumentationRules
         private static Task<Document> GetEnumDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, EnumMemberDeclarationSyntax declaration, SyntaxToken identifier, CancellationToken cancellationToken)
         {
             string newLineText = GetNewLineText(document);
+            var commentTrivia = declaration.GetDocumentationCommentTriviaSyntax();
 
-            var documentationNodes = new List<XmlNodeSyntax>();
+            var summaryNode = CommonDocumentationHelper.CreateDefaultSummaryNode(identifier.ValueText, newLineText);
+            if (commentTrivia != null)
+            {
+                return ReplaceExistingSummaryAsync(document, root, newLineText, commentTrivia, summaryNode);
+            }
 
-            documentationNodes.Add(MethodDocumentationHelper.CreateMethodSummeryText(identifier.ValueText, newLineText));
+            commentTrivia = XmlSyntaxFactory.DocumentationComment(newLineText, summaryNode);
+            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, commentTrivia));
+        }
 
-            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNodes.ToArray()));
+        private static Task<Document> ReplaceExistingSummaryAsync(Document document, SyntaxNode root, string newLineText, DocumentationCommentTriviaSyntax commentTrivia, XmlNodeSyntax summaryNode)
+        {
+            // HACK: The formatter isn't working when contents are added to an existing documentation comment, so we
+            // manually apply the indentation from the last line of the existing comment to each new line of the
+            // generated content.
+            SyntaxTrivia exteriorTrivia = CommonDocumentationHelper.GetLastDocumentationCommentExteriorTrivia(commentTrivia);
+            if (!exteriorTrivia.Token.IsMissing)
+            {
+                summaryNode = summaryNode.ReplaceExteriorTrivia(exteriorTrivia);
+            }
+
+            var originalSummeryNode = commentTrivia.Content.GetFirstXmlElement(XmlCommentHelper.SummaryXmlTag);
+            return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(originalSummeryNode, summaryNode)));
         }
 
         private static Document CreateCommentAndReplaceInDocument(
             Document document,
             SyntaxNode root,
             SyntaxNode declarationNode,
-            string newLineText,
-            params XmlNodeSyntax[] documentationNodes)
+            DocumentationCommentTriviaSyntax documentationComment)
         {
             var leadingTrivia = declarationNode.GetLeadingTrivia();
             int insertionIndex = GetInsertionIndex(ref leadingTrivia);
 
-            var documentationComment = XmlSyntaxFactory.DocumentationComment(newLineText, documentationNodes);
             var trivia = SyntaxFactory.Trivia(documentationComment);
 
             SyntaxTriviaList newLeadingTrivia = leadingTrivia.Insert(insertionIndex, trivia);

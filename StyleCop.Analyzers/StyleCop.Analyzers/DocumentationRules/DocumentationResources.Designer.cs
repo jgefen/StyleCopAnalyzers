@@ -125,6 +125,15 @@ namespace StyleCop.Analyzers.DocumentationRules {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Generate enum member documentation.
+        /// </summary>
+        internal static string EnumMemberDocumentationCodeFix {
+            get {
+                return ResourceManager.GetString("EnumMemberDocumentationCodeFix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Generate event documentation.
         /// </summary>
         internal static string EventDocumentationCodeFix {
