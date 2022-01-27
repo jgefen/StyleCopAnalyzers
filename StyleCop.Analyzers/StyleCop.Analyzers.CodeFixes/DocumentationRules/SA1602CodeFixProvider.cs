@@ -58,7 +58,7 @@ namespace StyleCop.Analyzers.DocumentationRules
                             declaration,
                             identifier,
                             cancellationToken),
-                        nameof(SA1600CodeFixProvider)),
+                        nameof(SA1602CodeFixProvider)),
                     diagnostic);
             }
         }

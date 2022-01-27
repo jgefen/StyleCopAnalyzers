@@ -1,9 +1,0 @@
-StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper
-StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.PropertyData
-StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.PropertyData.GetterVisible.get -> bool
-StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.PropertyData.HasGetter.get -> bool
-StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.PropertyData.HasSetter.get -> bool
-StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.PropertyData.PropertyData(bool hasSetter, bool setterVisible, bool hasGetter, bool getterVisible) -> void
-StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.PropertyData.SetterVisible.get -> bool
-static StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.AnalyzeIndexerAccessors(Microsoft.CodeAnalysis.CSharp.Syntax.IndexerDeclarationSyntax indexerDeclaration, Microsoft.CodeAnalysis.SemanticModel semanticModel, System.Threading.CancellationToken cancellationToken) -> StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.PropertyData
-static StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.AnalyzePropertyAccessors(Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax propertyDeclaration, Microsoft.CodeAnalysis.SemanticModel semanticModel, System.Threading.CancellationToken cancellationToken) -> StyleCop.Analyzers.Helpers.PropertyAnalyzerHelper.PropertyData

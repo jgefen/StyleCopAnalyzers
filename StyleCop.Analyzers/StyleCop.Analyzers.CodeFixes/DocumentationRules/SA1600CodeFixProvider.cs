@@ -178,31 +178,33 @@ namespace StyleCop.Analyzers.DocumentationRules
                     break;
 
                 case SyntaxKind.VariableDeclarator:
-                    var fieldDeclaration = identifierToken.Parent.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault();
+                    var fieldDeclaration = identifierToken.Parent.FirstAncestorOrSelf<FieldDeclarationSyntax>();
                     if (fieldDeclaration != null)
                     {
+                        var declaration = fieldDeclaration;
                         context.RegisterCodeFix(
                             CodeAction.Create(
                                 DocumentationResources.FieldDocumentationCodeFix,
                                 _ => GetCommonTypeDocumentationTransformedDocumentAsync(
                                     context.Document,
                                     root,
-                                    identifierToken.Parent.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault(),
-                                    identifierToken.Parent.AncestorsAndSelf().OfType<VariableDeclaratorSyntax>().First().Identifier),
+                                    declaration,
+                                    identifierToken.Parent.FirstAncestorOrSelf<VariableDeclaratorSyntax>().Identifier),
                                 nameof(SA1600CodeFixProvider)),
                             diagnostic);
                     }
 
-                    var eventDeclaration = identifierToken.Parent.Ancestors().OfType<EventFieldDeclarationSyntax>().FirstOrDefault();
+                    var eventDeclaration = identifierToken.Parent.FirstAncestorOrSelf<EventFieldDeclarationSyntax>();
                     if (eventDeclaration != null)
                     {
+                        var declaration = eventDeclaration;
                         context.RegisterCodeFix(
                             CodeAction.Create(
                                 DocumentationResources.EventDocumentationCodeFix,
                                 _ => GetEventFieldDocumentationTransformedDocumentAsync(
                                     context.Document,
                                     root,
-                                    identifierToken.Parent.Ancestors().OfType<EventFieldDeclarationSyntax>().FirstOrDefault()),
+                                    declaration),
                                 nameof(SA1600CodeFixProvider)),
                             diagnostic);
                     }
@@ -271,11 +273,8 @@ namespace StyleCop.Analyzers.DocumentationRules
             SyntaxToken identifier)
         {
             string newLineText = GetNewLineText(document);
-
             var documentationNode = EventDocumentationHelper.CreateEventDocumentation(identifier, newLineText);
-
-            return Task.FromResult(
-                CreateCommentAndReplaceInDocument(document, root, eventDeclaration, newLineText, documentationNode));
+            return CreateCommentAndReplaceInDocument(document, root, eventDeclaration, newLineText, documentationNode);
         }
 
         private static Task<Document> GetIndexerDocumentationTransformedDocumentAsync(
@@ -292,7 +291,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(newLineText, indexerDeclaration.ParameterList?.Parameters.ToArray()));
             documentationNodes.AddRange(MethodDocumentationHelper.CreateReturnDocumentation(newLineText, XmlSyntaxFactory.Text(DocumentationResources.IndexerReturnDocumentation)));
 
-            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, indexerDeclaration, newLineText, documentationNodes.ToArray()));
+            return CreateCommentAndReplaceInDocument(document, root, indexerDeclaration, newLineText, documentationNodes.ToArray());
         }
 
         private static Task<Document> GetCommonTypeDocumentationTransformedDocumentAsync(
@@ -309,7 +308,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             documentationNods.Add(CommonDocumentationHelper.CreateSummaryNode(documentationText, newLineText));
             documentationNods.AddRange(additionalDocumentation);
 
-            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNods.ToArray()));
+            return CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNods.ToArray());
         }
 
         private static Task<Document> GetCommonGenericTypeDocumentationTransformedDocumentAsync(
@@ -332,16 +331,12 @@ namespace StyleCop.Analyzers.DocumentationRules
             string newLineText = GetNewLineText(document);
 
             var propertyDocumentationNode = PropertyDocumentationHelper.CreatePropertySummeryComment(propertyDeclaration, semanticModel, cancellationToken, newLineText);
-            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, propertyDeclaration, newLineText, propertyDocumentationNode));
+            return CreateCommentAndReplaceInDocument(document, root, propertyDeclaration, newLineText, propertyDocumentationNode);
         }
 
         private static Task<Document> GetConstructorOrDestructorDocumentationTransformedDocumentAsync(Document document, SyntaxNode root, BaseMethodDeclarationSyntax declaration, CancellationToken cancellationToken)
         {
-            SyntaxTriviaList leadingTrivia = declaration.GetLeadingTrivia();
-            int insertionIndex = GetInsertionIndex(ref leadingTrivia);
-
             string newLineText = GetNewLineText(document);
-
             var documentationNodes = new List<XmlNodeSyntax>();
 
             var typeDeclaration = declaration.FirstAncestorOrSelf<BaseTypeDeclarationSyntax>();
@@ -356,15 +351,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             var parametersDocumentation = MethodDocumentationHelper.CreateParametersDocumentation(newLineText, declaration.ParameterList?.Parameters.ToArray());
             documentationNodes.AddRange(parametersDocumentation);
 
-            var documentationComment =
-                XmlSyntaxFactory.DocumentationComment(
-                    newLineText,
-                    documentationNodes.ToArray());
-            var trivia = SyntaxFactory.Trivia(documentationComment);
-
-            SyntaxTriviaList newLeadingTrivia = leadingTrivia.Insert(insertionIndex, trivia);
-            SyntaxNode newElement = declaration.WithLeadingTrivia(newLeadingTrivia);
-            return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(declaration, newElement)));
+            return CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNodes.ToArray());
         }
 
         private static Task<Document> GetMethodDocumentationTransformedDocumentAsync(
@@ -422,21 +409,16 @@ namespace StyleCop.Analyzers.DocumentationRules
             string newLineText = GetNewLineText(document);
 
             var documentationNodes = new List<XmlNodeSyntax>();
-
             documentationNodes.Add(CommonDocumentationHelper.CreateDefaultSummaryNode(identifier.ValueText, newLineText));
-
             documentationNodes.AddRange(MethodDocumentationHelper.CreateTypeParametersDocumentation(newLineText, typeParameterList?.Parameters.ToArray()));
-
             documentationNodes.AddRange(MethodDocumentationHelper.CreateParametersDocumentation(newLineText, parameterList?.Parameters.ToArray()));
-
             documentationNodes.AddRange(MethodDocumentationHelper.CreateReturnDocumentation(semanticModel, returnType, cancellationToken, newLineText));
-
             documentationNodes.AddRange(additionalDocumentation);
 
-            return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNodes.ToArray()));
+            return CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNodes.ToArray());
         }
 
-        private static Document CreateCommentAndReplaceInDocument(
+        private static Task<Document> CreateCommentAndReplaceInDocument(
             Document document,
             SyntaxNode root,
             SyntaxNode declarationNode,
@@ -451,7 +433,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             SyntaxTriviaList newLeadingTrivia = leadingTrivia.Insert(insertionIndex, trivia);
             SyntaxNode newElement = declarationNode.WithLeadingTrivia(newLeadingTrivia);
-            return document.WithSyntaxRoot(root.ReplaceNode(declarationNode, newElement));
+            return Task.FromResult(document.WithSyntaxRoot(root.ReplaceNode(declarationNode, newElement)));
         }
 
         private static int GetInsertionIndex(ref SyntaxTriviaList leadingTrivia)

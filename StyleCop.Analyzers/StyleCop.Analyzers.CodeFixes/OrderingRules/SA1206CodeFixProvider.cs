@@ -14,7 +14,7 @@ namespace StyleCop.Analyzers.OrderingRules
     using Microsoft.CodeAnalysis.CodeFixes;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using StyleCop.Analyzers.Helpers;
-    using static StyleCop.Analyzers.Helpers.ModifierOrderHelper;
+    using static StyleCop.Analyzers.OrderingRules.ModifierOrderHelper;
 
     /// <summary>
     /// Implements code fixes for element ordering rules.
