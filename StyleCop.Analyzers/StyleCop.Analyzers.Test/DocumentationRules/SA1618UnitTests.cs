@@ -440,7 +440,7 @@ public class ClassName
     /// <summary>
     /// Foo
     /// </summary>
-    /// <typeparam name=""Tb"">The type of tb.</typeparam>
+    /// <typeparam name=""Tb"">The type of the tb.</typeparam>
     public ##
 }";
 
@@ -453,8 +453,8 @@ public class ClassName
     /// <summary>
     /// Foo
     /// </summary>
-    /// <typeparam name=""Ta"">The type of ta.</typeparam>
-    /// <typeparam name=""Tb"">The type of tb.</typeparam>
+    /// <typeparam name=""Ta"">The type of the ta.</typeparam>
+    /// <typeparam name=""Tb"">The type of the tb.</typeparam>
     public ##
 }";
             DiagnosticResult[] expected =
@@ -478,7 +478,7 @@ public class ClassName
     /// <summary>
     /// Foo
     /// </summary>
-    /// <typeparam name=""Ta"">The type of ta.</typeparam>
+    /// <typeparam name=""Ta"">The type of the ta.</typeparam>
     public ##
 }";
 
@@ -491,8 +491,8 @@ public class ClassName
     /// <summary>
     /// Foo
     /// </summary>
-    /// <typeparam name=""Ta"">The type of ta.</typeparam>
-    /// <typeparam name=""Tb"">The type of tb.</typeparam>
+    /// <typeparam name=""Ta"">The type of the ta.</typeparam>
+    /// <typeparam name=""Tb"">The type of the tb.</typeparam>
     public ##
 }";
             DiagnosticResult[] expected =

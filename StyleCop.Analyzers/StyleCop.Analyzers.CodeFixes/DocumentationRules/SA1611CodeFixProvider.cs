@@ -45,10 +45,10 @@ namespace StyleCop.Analyzers.DocumentationRules
                     continue;
                 }
 
-                var parmaterSyntax = (ParameterSyntax)identifierToken.Parent;
+                var parameterSyntax = (ParameterSyntax)identifierToken.Parent;
 
                 // Declaration --> ParameterList --> Parameter
-                var parentDeclaration = parmaterSyntax.Parent.Parent;
+                var parentDeclaration = parameterSyntax.Parent.Parent;
                 switch (parentDeclaration.Kind())
                 {
                 case SyntaxKind.ConstructorDeclaration:
@@ -58,7 +58,7 @@ namespace StyleCop.Analyzers.DocumentationRules
                     context.RegisterCodeFix(
                         CodeAction.Create(
                             DocumentationResources.ParameterDocumentationCodeFix,
-                            cancellationToken => GetParameterDocumentationTransformedDocumentAsync(context.Document, root, parentDeclaration, parmaterSyntax),
+                            _ => GetParameterDocumentationTransformedDocumentAsync(context.Document, root, parentDeclaration, parameterSyntax),
                             nameof(SA1611CodeFixProvider)),
                         diagnostic);
                     break;

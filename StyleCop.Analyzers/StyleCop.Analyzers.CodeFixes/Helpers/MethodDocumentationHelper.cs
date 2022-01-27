@@ -299,7 +299,13 @@ namespace StyleCop.Analyzers.Helpers
 
         private static string CreateTypeParameterComment(TypeParameterSyntax parameter)
         {
-            return $"The type of {CommonDocumentationHelper.SplitNameAndToLower(parameter.Identifier.ValueText, true, true)}.";
+            if (parameter.Identifier.ValueText.Length == 1)
+            {
+                return string.Empty;
+            }
+
+            var nameDocumentation = CommonDocumentationHelper.SplitNameAndToLower(parameter.Identifier.ValueText, true, true);
+            return $"The type of the {nameDocumentation}.";
         }
 
         private static XmlTextSyntax CreateReturnDocumentationContent(TypeSyntax returnType)
