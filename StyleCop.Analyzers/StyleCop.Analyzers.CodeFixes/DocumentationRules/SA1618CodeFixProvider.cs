@@ -8,6 +8,7 @@ namespace StyleCop.Analyzers.DocumentationRules
     using System.Composition;
     using System.Linq;
     using System.Threading.Tasks;
+    using Lightup;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CodeActions;
     using Microsoft.CodeAnalysis.CodeFixes;
@@ -55,6 +56,8 @@ namespace StyleCop.Analyzers.DocumentationRules
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.StructDeclaration:
                 case SyntaxKind.InterfaceDeclaration:
+                case SyntaxKindEx.RecordDeclaration:
+                case SyntaxKindEx.RecordStructDeclaration:
                     context.RegisterCodeFix(
                         CodeAction.Create(
                             DocumentationResources.TypeParameterDocumentationCodeFix,

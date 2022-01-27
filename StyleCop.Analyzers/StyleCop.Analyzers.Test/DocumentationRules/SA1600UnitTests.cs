@@ -849,7 +849,7 @@ public class TestClass
 /// <summary>
 /// The test class2.
 /// </summary>
-/// <typeparam name=""T"">The type of T.</typeparam>
+/// <typeparam name=""T""></typeparam>
 public class TestClass2<T>
 {
 }
@@ -909,7 +909,7 @@ public interface TestService
 /// <summary>
 /// The test service2.
 /// </summary>
-/// <typeparam name=""T"">The type of T.</typeparam>
+/// <typeparam name=""T""></typeparam>
 public interface TestService2<T>
 {
 }
@@ -969,7 +969,7 @@ public struct TestStruct
 /// <summary>
 /// The test struct2.
 /// </summary>
-/// <typeparam name=""T"">The type of T.</typeparam>
+/// <typeparam name=""T""></typeparam>
 public struct TestStruct2<T>
 {
 }
@@ -1455,7 +1455,7 @@ public {typeKeyword} Test
     /// <summary>
     /// Test method3.
     /// </summary>
-    /// <typeparam name=""T"">The type of T.</typeparam>
+    /// <typeparam name=""T""></typeparam>
     /// <returns>A <see cref=""Task{{TResult}}""/> representing the result of the asynchronous operation.</returns>
     public Task<T> TestMethod3<T>()
     {{
@@ -1487,7 +1487,7 @@ public {typeKeyword} Test
     /// <summary>
     /// Test method6.
     /// </summary>
-    /// <typeparam name=""T"">The type of T.</typeparam>
+    /// <typeparam name=""T""></typeparam>
     /// <param name=""param1"">The param1.</param>
     /// <param name=""param2"">The param2.</param>
     /// <returns>A <see cref=""Task{{TResult}}""/> representing the result of the asynchronous operation.</returns>
