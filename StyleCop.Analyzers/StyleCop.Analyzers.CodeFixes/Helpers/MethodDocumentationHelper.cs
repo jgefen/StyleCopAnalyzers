@@ -22,6 +22,11 @@ namespace StyleCop.Analyzers.Helpers
         /// <returns>The xml node syntax list.</returns>
         public static IEnumerable<XmlNodeSyntax> CreateThrowDocumentation(SyntaxNode expression, string newLine)
         {
+            if (expression == null)
+            {
+                yield break;
+            }
+
             var throwStatements = expression.DescendantNodes().OfType<ThrowStatementSyntax>();
             foreach (var throwStatement in throwStatements)
             {
