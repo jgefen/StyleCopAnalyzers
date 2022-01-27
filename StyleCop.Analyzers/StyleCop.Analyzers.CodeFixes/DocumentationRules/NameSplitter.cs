@@ -4,6 +4,7 @@
 namespace StyleCop.Analyzers.DocumentationRules
 {
     using System.Collections.Generic;
+    using System.Text;
 
     /// <summary>
     /// The name splitter.
@@ -15,28 +16,25 @@ namespace StyleCop.Analyzers.DocumentationRules
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns>A list of words.</returns>
-        public static List<string> Split(string name)
+        public static IEnumerable<string> Split(string name)
         {
-            List<string> words = new List<string>();
-            List<char> singleWord = new List<char>();
+            var sb = new StringBuilder();
 
             foreach (char c in name)
             {
-                if (char.IsUpper(c) && singleWord.Count > 0)
+                if (char.IsUpper(c) && sb.Length > 0)
                 {
-                    words.Add(new string(singleWord.ToArray()));
-                    singleWord.Clear();
-                    singleWord.Add(c);
+                    yield return sb.ToString();
+                    sb.Clear();
+                    sb.Append(c);
                 }
                 else
                 {
-                    singleWord.Add(c);
+                    sb.Append(c);
                 }
             }
 
-            words.Add(new string(singleWord.ToArray()));
-
-            return words;
+            yield return sb.ToString();
         }
     }
 }
