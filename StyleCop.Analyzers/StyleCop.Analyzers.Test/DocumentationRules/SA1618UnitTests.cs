@@ -11,7 +11,9 @@ namespace StyleCop.Analyzers.Test.DocumentationRules
     using StyleCop.Analyzers.Lightup;
     using StyleCop.Analyzers.Test.Verifiers;
     using Xunit;
-    using static StyleCop.Analyzers.Test.Verifiers.CustomDiagnosticVerifier<StyleCop.Analyzers.DocumentationRules.SA1618GenericTypeParametersMustBeDocumented>;
+    using static StyleCop.Analyzers.Test.Verifiers.StyleCopCodeFixVerifier<
+        StyleCop.Analyzers.DocumentationRules.SA1618GenericTypeParametersMustBeDocumented,
+        StyleCop.Analyzers.DocumentationRules.SA1618CodeFixProvider>;
 
     /// <summary>
     /// This class contains unit tests for <see cref="SA1618GenericTypeParametersMustBeDocumented"/>.
@@ -425,10 +427,89 @@ internal class ClassName
             await VerifyCSharpDiagnosticAsync(testCode, DiagnosticResult.EmptyDiagnosticResults, CancellationToken.None).ConfigureAwait(false);
         }
 
-        private static Task VerifyCSharpDiagnosticAsync(string source, DiagnosticResult expected, CancellationToken cancellationToken)
-            => VerifyCSharpDiagnosticAsync(source, new[] { expected }, cancellationToken);
+        [Theory]
+        [MemberData(nameof(Members))]
+        public async Task TestMissingFirstTypeParameterCodeFixAsync(string p)
+        {
+            var testCode = @"
+/// <summary>
+/// Foo
+/// </summary>
+public class ClassName
+{
+    /// <summary>
+    /// Foo
+    /// </summary>
+    /// <typeparam name=""Tb"">The type of tb.</typeparam>
+    public ##
+}";
+
+            var fixedCode = @"
+/// <summary>
+/// Foo
+/// </summary>
+public class ClassName
+{
+    /// <summary>
+    /// Foo
+    /// </summary>
+    /// <typeparam name=""Ta"">The type of ta.</typeparam>
+    /// <typeparam name=""Tb"">The type of tb.</typeparam>
+    public ##
+}";
+            DiagnosticResult[] expected =
+            {
+                Diagnostic().WithLocation(11, 30).WithArguments("Ta"),
+            };
+
+            await VerifyCSharpFixAsync(testCode.Replace("##", p), expected, fixedCode.Replace("##", p), CancellationToken.None).ConfigureAwait(false);
+        }
+
+        [Theory]
+        [MemberData(nameof(Members))]
+        public async Task TestMissingSecondParameterCodeFixAsync(string p)
+        {
+            var testCode = @"
+/// <summary>
+/// Foo
+/// </summary>
+public class ClassName
+{
+    /// <summary>
+    /// Foo
+    /// </summary>
+    /// <typeparam name=""Ta"">The type of ta.</typeparam>
+    public ##
+}";
+
+            var fixedCode = @"
+/// <summary>
+/// Foo
+/// </summary>
+public class ClassName
+{
+    /// <summary>
+    /// Foo
+    /// </summary>
+    /// <typeparam name=""Ta"">The type of ta.</typeparam>
+    /// <typeparam name=""Tb"">The type of tb.</typeparam>
+    public ##
+}";
+            DiagnosticResult[] expected =
+            {
+                Diagnostic().WithLocation(11, 34).WithArguments("Tb"),
+            };
+
+            await VerifyCSharpFixAsync(testCode.Replace("##", p), expected, fixedCode.Replace("##", p), CancellationToken.None).ConfigureAwait(false);
+        }
 
         private static Task VerifyCSharpDiagnosticAsync(string source, DiagnosticResult[] expected, CancellationToken cancellationToken)
+            => VerifyCSharpFixAsync(source, expected, null, cancellationToken);
+
+        private static Task VerifyCSharpDiagnosticAsync(string source, DiagnosticResult expected, CancellationToken cancellationToken)
+            => VerifyCSharpFixAsync(source, new[] { expected }, null, cancellationToken);
+
+        private static Task VerifyCSharpFixAsync(string source, DiagnosticResult[] expected, string fixedSource, CancellationToken cancellationToken)
         {
             string contentClassWithTypeparamDoc = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
 <TestClass>
@@ -469,9 +550,10 @@ internal class ClassName
 </TestClass>
 ";
 
-            var test = new StyleCopDiagnosticVerifier<SA1618GenericTypeParametersMustBeDocumented>.CSharpTest
+            var test = new CSharpTest
             {
                 TestCode = source,
+                FixedCode = fixedSource,
                 XmlReferences =
                 {
                     { "ClassWithTypeparamDoc.xml", contentClassWithTypeparamDoc },

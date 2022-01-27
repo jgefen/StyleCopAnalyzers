@@ -162,7 +162,7 @@ namespace StyleCop.Analyzers.Helpers
             foreach (var parameter in parameters)
             {
                 yield return XmlSyntaxFactory.NewLine(newLineText);
-                var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateParameterSummeryText(parameter));
+                var paramDocumentation = XmlSyntaxFactory.Text(CreateParameterSummeryText(parameter));
                 yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
             }
         }
@@ -183,7 +183,7 @@ namespace StyleCop.Analyzers.Helpers
             foreach (var parameter in parameters)
             {
                 yield return leadingNewLine;
-                var paramDocumentation = XmlSyntaxFactory.Text(MethodDocumentationHelper.CreateParameterSummeryText(parameter));
+                var paramDocumentation = XmlSyntaxFactory.Text(CreateParameterSummeryText(parameter));
                 yield return XmlSyntaxFactory.ParamElement(parameter.Identifier.ValueText, paramDocumentation);
             }
         }
@@ -288,16 +288,7 @@ namespace StyleCop.Analyzers.Helpers
 
         private static string CreateTypeParameterComment(TypeParameterSyntax parameter)
         {
-            var typeParamName = CommonDocumentationHelper.SplitNameAndToLower(parameter.Identifier.Text, true, true);
-            var prefix = "The type of ";
-            if (typeParamName.Length == 1)
-            {
-                return prefix + typeParamName.ToUpper() + ".";
-            }
-            else
-            {
-                return prefix + "the " + typeParamName + ".";
-            }
+            return $"The type of {CommonDocumentationHelper.SplitNameAndToLower(parameter.Identifier.ValueText, true, true)}.";
         }
 
         private static XmlTextSyntax CreateReturnDocumentationContent(TypeSyntax returnType)
