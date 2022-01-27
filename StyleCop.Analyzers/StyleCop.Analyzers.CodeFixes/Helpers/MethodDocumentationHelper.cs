@@ -15,17 +15,6 @@ namespace StyleCop.Analyzers.Helpers
     internal static class MethodDocumentationHelper
     {
         /// <summary>
-        /// Creates method comment.
-        /// </summary>
-        /// <param name="name">The method name.</param>
-        /// <param name="newLineText">The new line text.</param>
-        /// <returns>The method comment.</returns>
-        public static XmlNodeSyntax CreateMethodSummeryText(string name, string newLineText)
-        {
-            return CommonDocumentationHelper.CreateSummeryNode(CommonDocumentationHelper.GetNameDocumentation(name, false), newLineText);
-        }
-
-        /// <summary>
         /// Creates the throw documentation.
         /// </summary>
         /// <param name="expression">The expression.</param>

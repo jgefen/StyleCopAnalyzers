@@ -306,7 +306,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             var documentationNods = new List<XmlNodeSyntax>();
             var documentationText = CommonDocumentationHelper.CreateCommonComment(declarationIdentifier.ValueText, declaration.Kind() == SyntaxKind.InterfaceDeclaration);
-            documentationNods.Add(CommonDocumentationHelper.CreateSummeryNode(documentationText, newLineText));
+            documentationNods.Add(CommonDocumentationHelper.CreateSummaryNode(documentationText, newLineText));
             documentationNods.AddRange(additionalDocumentation);
 
             return Task.FromResult(CreateCommentAndReplaceInDocument(document, root, declaration, newLineText, documentationNods.ToArray()));
@@ -423,7 +423,7 @@ namespace StyleCop.Analyzers.DocumentationRules
 
             var documentationNodes = new List<XmlNodeSyntax>();
 
-            documentationNodes.Add(MethodDocumentationHelper.CreateMethodSummeryText(identifier.ValueText, newLineText));
+            documentationNodes.Add(CommonDocumentationHelper.CreateDefaultSummaryNode(identifier.ValueText, newLineText));
 
             documentationNodes.AddRange(MethodDocumentationHelper.CreateTypeParametersDocumentation(newLineText, typeParameterList?.Parameters.ToArray()));
 

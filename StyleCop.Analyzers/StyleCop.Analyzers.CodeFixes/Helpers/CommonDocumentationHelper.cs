@@ -17,10 +17,21 @@ namespace StyleCop.Analyzers.Helpers
         /// <param name="summeryContent">Content of the summery.</param>
         /// <param name="newLineText">The new line text.</param>
         /// <returns>The summery node.</returns>
-        public static XmlNodeSyntax CreateSummeryNode(string summeryContent, string newLineText)
+        public static XmlNodeSyntax CreateSummaryNode(string summeryContent, string newLineText)
         {
             var summerySyntax = XmlSyntaxFactory.Text(summeryContent);
             return XmlSyntaxFactory.SummaryElement(newLineText, summerySyntax);
+        }
+
+        /// <summary>
+        /// Creates default summery comment.
+        /// </summary>
+        /// <param name="name">The method name.</param>
+        /// <param name="newLineText">The new line text.</param>
+        /// <returns>The method comment.</returns>
+        public static XmlNodeSyntax CreateDefaultSummaryNode(string name, string newLineText)
+        {
+            return CreateSummaryNode(GetNameDocumentation(name, false), newLineText);
         }
 
         public static string SplitNameAndToLower(string name, bool isFirstCharacterLower, bool skipSingleCharIfFirst = false)
