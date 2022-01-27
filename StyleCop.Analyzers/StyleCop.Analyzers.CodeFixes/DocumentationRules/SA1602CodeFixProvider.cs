@@ -22,6 +22,7 @@ namespace StyleCop.Analyzers.DocumentationRules
     [Shared]
     internal class SA1602CodeFixProvider : CodeFixProvider
     {
+        /// <inheritdoc/>
         public override ImmutableArray<string> FixableDiagnosticIds { get; } =
             ImmutableArray.Create(
                 SA1602EnumerationItemsMustBeDocumented.DiagnosticId);
@@ -32,6 +33,7 @@ namespace StyleCop.Analyzers.DocumentationRules
             return CustomFixAllProviders.BatchFixer;
         }
 
+        /// <inheritdoc/>
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var document = context.Document;
