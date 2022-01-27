@@ -8,6 +8,7 @@ namespace StyleCop.Analyzers.Test.DocumentationRules
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.Testing;
     using StyleCop.Analyzers.DocumentationRules;
+    using StyleCop.Analyzers.Lightup;
     using Xunit;
     using static StyleCop.Analyzers.Test.Verifiers.StyleCopCodeFixVerifier<
         StyleCop.Analyzers.DocumentationRules.SA1600ElementsMustBeDocumented,
@@ -63,6 +64,24 @@ using System;
         }
 
         [Fact]
+        public async Task TestRecordWithoutDocumentationAsync()
+        {
+            if (LightupHelpers.SupportsCSharp9)
+            {
+                await this.TestTypeWithoutDocumentationAsync("record", false).ConfigureAwait(false);
+            }
+        }
+
+        [Fact]
+        public async Task TestRecordStructWithoutDocumentationAsync()
+        {
+            if (LightupHelpers.SupportsCSharp10)
+            {
+                await this.TestTypeWithoutDocumentationAsync("record struct", false).ConfigureAwait(false);
+            }
+        }
+
+        [Fact]
         public async Task TestClassWithDocumentationAsync()
         {
             await this.TestTypeWithDocumentationAsync("class").ConfigureAwait(false);
@@ -84,6 +103,24 @@ using System;
         public async Task TestInterfaceWithDocumentationAsync()
         {
             await this.TestTypeWithDocumentationAsync("interface").ConfigureAwait(false);
+        }
+
+        [Fact]
+        public async Task TestRecordWithDocumentationAsync()
+        {
+            if (LightupHelpers.SupportsCSharp9)
+            {
+                await this.TestTypeWithDocumentationAsync("record").ConfigureAwait(false);
+            }
+        }
+
+        [Fact]
+        public async Task TestRecordStructWithDocumentationAsync()
+        {
+            if (LightupHelpers.SupportsCSharp10)
+            {
+                await this.TestTypeWithDocumentationAsync("record struct").ConfigureAwait(false);
+            }
         }
 
         [Fact]
