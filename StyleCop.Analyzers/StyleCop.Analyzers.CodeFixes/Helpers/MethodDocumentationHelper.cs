@@ -4,6 +4,7 @@
 namespace StyleCop.Analyzers.Helpers
 {
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading;
     using Microsoft.CodeAnalysis;
@@ -14,6 +15,8 @@ namespace StyleCop.Analyzers.Helpers
 
     internal static class MethodDocumentationHelper
     {
+        private static readonly ImmutableHashSet<char> VowelChars = ImmutableHashSet.Create('a', 'e', 'i', 'o', 'u');
+
         /// <summary>
         /// Creates the throw documentation.
         /// </summary>
@@ -27,15 +30,15 @@ namespace StyleCop.Analyzers.Helpers
                 yield break;
             }
 
-            var throwStatements = expression.DescendantNodes().OfType<ThrowStatementSyntax>();
-            foreach (var throwStatement in throwStatements)
-            {
-                if (throwStatement.Expression is not ObjectCreationExpressionSyntax objectCreationExpression)
-                {
-                    continue;
-                }
+            var exceptionsTypes = expression
+                .DescendantNodes()
+                .OfType<ThrowStatementSyntax>()
+                .Select(t => t.Expression)
+                .OfType<ObjectCreationExpressionSyntax>()
+                .Select(e => e.Type);
 
-                var exceptionType = objectCreationExpression.Type;
+            foreach (var exceptionType in exceptionsTypes)
+            {
                 yield return XmlSyntaxFactory.NewLine(newLine);
                 yield return XmlSyntaxFactory.ExceptionElement(SyntaxFactory.TypeCref(exceptionType));
             }
@@ -268,8 +271,7 @@ namespace StyleCop.Analyzers.Helpers
 
         private static string DetermineStartedWord(string returnType)
         {
-            var vowelChars = new List<char>() { 'a', 'e', 'i', 'o', 'u' };
-            if (vowelChars.Contains(char.ToLower(returnType[0])))
+            if (VowelChars.Contains(char.ToLower(returnType[0])))
             {
                 return "An";
             }

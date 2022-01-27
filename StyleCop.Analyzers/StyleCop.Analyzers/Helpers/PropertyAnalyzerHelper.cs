@@ -8,7 +8,7 @@ namespace StyleCop.Analyzers.Helpers
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-    public static class PropertyAnalyzerHelper
+    internal static class PropertyAnalyzerHelper
     {
         /// <summary>
         /// Analyzes the indexer accessors.
