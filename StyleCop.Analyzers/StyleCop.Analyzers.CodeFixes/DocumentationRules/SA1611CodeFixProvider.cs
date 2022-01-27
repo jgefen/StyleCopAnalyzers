@@ -79,7 +79,7 @@ namespace StyleCop.Analyzers.DocumentationRules
                 prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.TypeParamXmlTag).LastOrDefault();
             }
 
-            // no
+            // last fallback Summery or first in existing XML doc
             if (prevNode == null)
             {
                 prevNode = documentation.Content.GetXmlElements(XmlCommentHelper.SummaryXmlTag).FirstOrDefault() ?? documentation.Content.First();
